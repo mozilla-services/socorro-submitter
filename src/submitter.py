@@ -282,7 +282,7 @@ def multipart_encode(raw_crash, dumps):
     boundary = uuid.uuid4().hex
     output = io.BytesIO()
 
-    # Package up raw crash metadata
+    # Package up raw crash metadata--sort them so they're stable in the payload
     for key, val in sorted(raw_crash.items()):
         output.write(smart_bytes('--%s\r\n' % boundary))
         output.write(
@@ -292,8 +292,8 @@ def multipart_encode(raw_crash, dumps):
         output.write(b'\r\n\r\n')
         output.write(smart_bytes(val))
 
-    # Insert dump data
-    for name, data in dumps:
+    # Insert dump data--sort them so they're stable in the payload
+    for name, data in sorted(dumps):
         output.write(smart_bytes('--%s\r\n' % boundary))
 
         # dumps are sent as streams
