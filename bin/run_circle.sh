@@ -12,4 +12,21 @@
 #
 # Usage: ./bin/run_circle.sh
 
-# FIXME(willkg): Implement this
+docker-compose up -d rabbitmq
+docker network ls
+
+# Run flake8
+docker run \
+    --rm \
+    --workdir=/app \
+    --env-file=docker/lambda.env \
+    socorrosubmitter_test flake8 /app/build/submitter.py
+
+# Run pytest
+docker run \
+    --rm \
+    --workdir=/app \
+    --network=socorrosubmitter_default \
+    --link=socorrosubmitter_rabbitmq_1 \
+    --env-file=docker/lambda.env \
+    socorrosubmitter_test pytest

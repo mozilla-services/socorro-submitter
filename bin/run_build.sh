@@ -9,4 +9,8 @@
 # Create the dir if it doesn't exist
 test -d build/ || mkdir build/
 
-# FIXME(willkg): Implement this
+# Install requirements
+pip install --disable-pip-version-check --ignore-installed --no-cache-dir -r requirements.txt -t build/
+
+# Copy submitter into package
+cp src/submitter.py build/submitter.py
