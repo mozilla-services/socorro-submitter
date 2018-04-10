@@ -351,7 +351,7 @@ def handler(event, context):
             continue
 
         # Throttle any ACCEPTed records
-        if CONFIG.throttle < 100 and random.randint(0, 100) < CONFIG.throttle:
+        if CONFIG.throttle < 100 and random.randint(0, 100) > CONFIG.throttle:
             statsd_incr('socorro.submitter.throttled', value=1)
             continue
 
