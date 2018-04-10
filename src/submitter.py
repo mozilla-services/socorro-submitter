@@ -14,7 +14,6 @@ import os
 import random
 import re
 import time
-import uuid
 
 import boto3
 from botocore.client import Config as Boto3Config
