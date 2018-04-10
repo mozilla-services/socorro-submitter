@@ -220,5 +220,5 @@ def fakes3():
             's3_region': ''
         }
         with CONFIG.override(**s3_vars):
-            # Return FakeS3 client for convenience
+            # Yield a FakeS3 client for test convenience
             yield FakeS3()

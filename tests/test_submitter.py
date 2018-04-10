@@ -7,7 +7,7 @@ import pytest
 from submitter import CONFIG, extract_crash_id_from_record
 
 
-def test_basic(client, fakes3, mock_collector):
+def test_basic(client, capsys, fakes3, mock_collector):
     fakes3.create_bucket()
     fakes3.save_crash(
         raw_crash={
@@ -22,7 +22,10 @@ def test_basic(client, fakes3, mock_collector):
 
     crash_id = 'de1bb258-cbbf-4589-a673-34f800160918'
     events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
-    assert client.run(events) is None
+
+    # Make sure it doesn't get throttled and invoke the Lambda function
+    with CONFIG.override(throttle=100):
+        assert client.run(events) is None
 
     # Verify payload was submitted
     assert len(mock_collector.payloads) == 1
@@ -55,12 +58,78 @@ def test_basic(client, fakes3, mock_collector):
         '--01659896d5dc42cabd7f3d8a3dcdd3bb--\r\n'
     )
 
+    stdout, stderr = capsys.readouterr()
+    assert '|1|count|socorro.submitter.accept|' in stdout
 
-def test_non_s3_event(client, fakes3, mock_collector):
+
+def test_multiple_dumps(client, capsys, fakes3, mock_collector):
+    fakes3.create_bucket()
+    fakes3.save_crash(
+        raw_crash={
+            'uuid': 'de1bb258-cbbf-4589-a673-34f800160918',
+            'Product': 'Firefox',
+            'Version': '60.0',
+        },
+        dumps={
+            'upload_file_minidump': 'abcdef',
+            'upload_file_minidump_content': 'abcdef2'
+        }
+    )
+
+    crash_id = 'de1bb258-cbbf-4589-a673-34f800160918'
+    events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
+
+    # Make sure it doesn't get throttled and invoke the Lambda function
+    with CONFIG.override(throttle=100):
+        assert client.run(events) is None
+
+    # Verify payload was submitted
+    assert len(mock_collector.payloads) == 1
+    post_payload = mock_collector.payloads[0].text
+
+    # Who doesn't like reading raw multipart/form-data? Woo hoo!
+    assert (
+        post_payload ==
+        '--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n'
+        'Content-Disposition: form-data; name="Product"\r\n'
+        'Content-Type: text/plain; charset=utf-8\r\n'
+        '\r\n'
+        '\r\n'
+        'Firefox--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n'
+        'Content-Disposition: form-data; name="Version"\r\n'
+        'Content-Type: text/plain; charset=utf-8\r\n'
+        '\r\n'
+        '\r\n'
+        '60.0--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n'
+        'Content-Disposition: form-data; name="uuid"\r\n'
+        'Content-Type: text/plain; charset=utf-8\r\n'
+        '\r\n'
+        '\r\n'
+        'de1bb258-cbbf-4589-a673-34f800160918--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n'
+        'Content-Disposition: form-data; name="uuid"; filename="upload_file_minidump"\r\n'
+        'Content-Type: application/octet-stream\r\n'
+        '\r\n'
+        '\r\n'
+        'abcdef\r\n'
+        '--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n'
+        'Content-Disposition: form-data; name="uuid"; filename="upload_file_minidump_content"\r\n'
+        'Content-Type: application/octet-stream\r\n'
+        '\r\n'
+        '\r\n'
+        'abcdef2\r\n'
+        '--01659896d5dc42cabd7f3d8a3dcdd3bb--\r\n'
+    )
+
+    stdout, stderr = capsys.readouterr()
+    assert '|1|count|socorro.submitter.accept|' in stdout
+
+
+def test_non_s3_event_ignored(client, fakes3, mock_collector):
     events = {
         'Records': [
             {
                 'eventSource': 'aws:lonnen',
+                'eventName': 'ObjectCreated:Move'
             }
         ]
     }
@@ -70,11 +139,12 @@ def test_non_s3_event(client, fakes3, mock_collector):
     assert len(mock_collector.payloads) == 0
 
 
-def test_non_put_event(client, fakes3, mock_collector):
+def test_non_put_event_ignored(client, fakes3, mock_collector):
     events = {
         'Records': [
             {
-                'eventSource': 'aws:lonnen',
+                'eventSource': 'aws:s3',
+                'eventName': 'ObjectCreated:Move'
             }
         ]
     }
@@ -84,7 +154,30 @@ def test_non_put_event(client, fakes3, mock_collector):
     assert len(mock_collector.payloads) == 0
 
 
-def test_env_tag(client, capsys, fakes3, mock_collector):
+def test_defer_instruction_ignored(client, capsys, fakes3, mock_collector):
+    crash_id = 'de1bb258-cbbf-4589-a673-34f801160918'
+    #                                        ^ defer
+    events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
+    assert client.run(events) is None
+
+    # Verify no payload was submitted
+    assert len(mock_collector.payloads) == 0
+
+    stdout, stderr = capsys.readouterr()
+    assert '|1|count|socorro.submitter.defer|' in stdout
+
+
+def test_invalid_instruction_ignored(client, fakes3, mock_collector):
+    crash_id = 'de1bb258-cbbf-4589-a673-34f802160918'
+    #                                        ^ not accept or defer
+    events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
+    assert client.run(events) is None
+
+    # Verify no payload was submitted
+    assert len(mock_collector.payloads) == 0
+
+
+def test_throttle_accepted(client, capsys, mock_randint_always_20, fakes3, mock_collector):
     fakes3.create_bucket()
     fakes3.save_crash(
         raw_crash={
@@ -97,7 +190,60 @@ def test_env_tag(client, capsys, fakes3, mock_collector):
         }
     )
 
-    with CONFIG.override(env_name='stage'):
+    crash_id = 'de1bb258-cbbf-4589-a673-34f800160918'
+    events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
+
+    # Set throttle value above the mocked randint, so this should get submitted
+    with CONFIG.override(throttle=30):
+        assert client.run(events) is None
+
+    # Verify payload was submitted
+    assert len(mock_collector.payloads) == 1
+    stdout, stderr = capsys.readouterr()
+    assert '|1|count|socorro.submitter.accept|' in stdout
+
+
+def test_throttle_skipped(client, capsys, mock_randint_always_20, fakes3, mock_collector):
+    fakes3.create_bucket()
+    fakes3.save_crash(
+        raw_crash={
+            'uuid': 'de1bb258-cbbf-4589-a673-34f800160918',
+            'Product': 'Firefox',
+            'Version': '60.0',
+        },
+        dumps={
+            'upload_file_minidump': 'abcdef'
+        }
+    )
+
+    crash_id = 'de1bb258-cbbf-4589-a673-34f800160918'
+    events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
+
+    # Set throttle value below the mocked randint, so this should get skipped
+    with CONFIG.override(throttle=10):
+        assert client.run(events) is None
+
+    # Verify no payload was submitted
+    assert len(mock_collector.payloads) == 0
+
+    stdout, stderr = capsys.readouterr()
+    assert '|1|count|socorro.submitter.throttled|' in stdout
+
+
+def test_env_tag_added_to_statds_incr(client, capsys, fakes3, mock_collector):
+    fakes3.create_bucket()
+    fakes3.save_crash(
+        raw_crash={
+            'uuid': 'de1bb258-cbbf-4589-a673-34f800160918',
+            'Product': 'Firefox',
+            'Version': '60.0',
+        },
+        dumps={
+            'upload_file_minidump': 'abcdef'
+        }
+    )
+
+    with CONFIG.override(env_name='stage', throttle=100):
         crash_id = 'de1bb258-cbbf-4589-a673-34f800160918'
         #                                        ^ accept
         events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
@@ -108,42 +254,6 @@ def test_env_tag(client, capsys, fakes3, mock_collector):
 
         stdout, stderr = capsys.readouterr()
         assert '|1|count|socorro.submitter.accept|#env:stage\n' in stdout
-
-
-def test_defer(client, capsys, fakes3, mock_collector):
-    crash_id = 'de1bb258-cbbf-4589-a673-34f801160918'
-    #                                        ^ defer
-    events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
-    assert client.run(events) is None
-
-    # FIXME(willkg): Verify no payload was submitted
-
-    stdout, stderr = capsys.readouterr()
-    assert '|1|count|socorro.submitter.defer|' in stdout
-
-
-def test_accept(client, capsys):
-    crash_id = 'de1bb258-cbbf-4589-a673-34f800160918'
-    #                                        ^ accept
-    events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
-    assert client.run(events) is None
-
-    # FIXME(willkg): Verify payload was submitted
-
-    stdout, stderr = capsys.readouterr()
-    assert '|1|count|socorro.submitter.accept|' in stdout
-
-
-def test_invalid_instruction(client, capsys):
-    crash_id = 'de1bb258-cbbf-4589-a673-34f802160918'
-    #                                        ^ not accept or defer
-    events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
-    assert client.run(events) is None
-
-    # FIXME(willkg): Verify no payload was submitted
-
-    stdout, stderr = capsys.readouterr()
-    assert '|1|count|socorro.submitter.junk|' in stdout
 
 
 @pytest.mark.parametrize('data, expected', [
