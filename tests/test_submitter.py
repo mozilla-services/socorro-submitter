@@ -7,16 +7,56 @@ import pytest
 from submitter import CONFIG, extract_crash_id_from_record
 
 
-def test_basic(client):
+def test_basic(client, fakes3, mock_collector):
+    fakes3.create_bucket()
+    fakes3.save_crash(
+        raw_crash={
+            'uuid': 'de1bb258-cbbf-4589-a673-34f800160918',
+            'Product': 'Firefox',
+            'Version': '60.0',
+        },
+        dumps={
+            'upload_file_minidump': 'abcdef'
+        }
+    )
+
     crash_id = 'de1bb258-cbbf-4589-a673-34f800160918'
-    events = client.build_crash_save_events(client.crash_id_to_path(crash_id))
+    events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
     assert client.run(events) is None
 
-    # item = rabbitmq_helper.next_item()
-    # assert item == crash_id
+    # Verify payload was submitted
+    assert len(mock_collector.payloads) == 1
+    post_payload = mock_collector.payloads[0].text
+
+    # Who doesn't like reading raw multipart/form-data? Woo hoo!
+    assert (
+        post_payload ==
+        '--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n'
+        'Content-Disposition: form-data; name="Product"\r\n'
+        'Content-Type: text/plain; charset=utf-8\r\n'
+        '\r\n'
+        '\r\n'
+        'Firefox--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n'
+        'Content-Disposition: form-data; name="Version"\r\n'
+        'Content-Type: text/plain; charset=utf-8\r\n'
+        '\r\n'
+        '\r\n'
+        '60.0--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n'
+        'Content-Disposition: form-data; name="uuid"\r\n'
+        'Content-Type: text/plain; charset=utf-8\r\n'
+        '\r\n'
+        '\r\n'
+        'de1bb258-cbbf-4589-a673-34f800160918--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n'
+        'Content-Disposition: form-data; name="uuid"; filename="upload_file_minidump"\r\n'
+        'Content-Type: application/octet-stream\r\n'
+        '\r\n'
+        '\r\n'
+        'abcdef\r\n'
+        '--01659896d5dc42cabd7f3d8a3dcdd3bb--\r\n'
+    )
 
 
-def test_non_s3_event(client):
+def test_non_s3_event(client, fakes3, mock_collector):
     events = {
         'Records': [
             {
@@ -26,12 +66,11 @@ def test_non_s3_event(client):
     }
     assert client.run(events) is None
 
-    # Verify that no rabbit message got created
-    # item = rabbitmq_helper.next_item()
-    # assert item is None
+    # Verify no payload was submitted
+    assert len(mock_collector.payloads) == 0
 
 
-def test_non_put_event(client):
+def test_non_put_event(client, fakes3, mock_collector):
     events = {
         'Records': [
             {
@@ -41,76 +80,70 @@ def test_non_put_event(client):
     }
     assert client.run(events) is None
 
-    # Verify that no rabbit message got created
-    # item = rabbitmq_helper.next_item()
-    # assert item is None
+    # Verify no payload was submitted
+    assert len(mock_collector.payloads) == 0
 
 
-def test_env_tag(client, capsys):
-    with CONFIG.override(env='stage'):
+def test_env_tag(client, capsys, fakes3, mock_collector):
+    fakes3.create_bucket()
+    fakes3.save_crash(
+        raw_crash={
+            'uuid': 'de1bb258-cbbf-4589-a673-34f800160918',
+            'Product': 'Firefox',
+            'Version': '60.0',
+        },
+        dumps={
+            'upload_file_minidump': 'abcdef'
+        }
+    )
+
+    with CONFIG.override(env_name='stage'):
         crash_id = 'de1bb258-cbbf-4589-a673-34f800160918'
         #                                        ^ accept
-        events = client.build_crash_save_events(client.crash_id_to_path(crash_id))
+        events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
         assert client.run(events) is None
 
-        # item = rabbitmq_helper.next_item()
-        # assert item == crash_id
+        # Verify payload was submitted
+        assert len(mock_collector.payloads) == 1
 
         stdout, stderr = capsys.readouterr()
         assert '|1|count|socorro.submitter.accept|#env:stage\n' in stdout
 
 
-def test_defer(client, rabbitmq_helper, capsys):
+def test_defer(client, capsys, fakes3, mock_collector):
     crash_id = 'de1bb258-cbbf-4589-a673-34f801160918'
     #                                        ^ defer
-    events = client.build_crash_save_events(client.crash_id_to_path(crash_id))
+    events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
     assert client.run(events) is None
 
-    # item = rabbitmq_helper.next_item()
-    # assert item is None
+    # FIXME(willkg): Verify no payload was submitted
 
     stdout, stderr = capsys.readouterr()
     assert '|1|count|socorro.submitter.defer|' in stdout
 
 
-def test_accept(client, rabbitmq_helper, capsys):
+def test_accept(client, capsys):
     crash_id = 'de1bb258-cbbf-4589-a673-34f800160918'
     #                                        ^ accept
-    events = client.build_crash_save_events(client.crash_id_to_path(crash_id))
+    events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
     assert client.run(events) is None
 
-    # item = rabbitmq_helper.next_item()
-    # assert item == crash_id
+    # FIXME(willkg): Verify payload was submitted
 
     stdout, stderr = capsys.readouterr()
     assert '|1|count|socorro.submitter.accept|' in stdout
 
 
-def test_junk(client, rabbitmq_helper, capsys):
+def test_invalid_instruction(client, capsys):
     crash_id = 'de1bb258-cbbf-4589-a673-34f802160918'
-    #                                        ^ junk
-    events = client.build_crash_save_events(client.crash_id_to_path(crash_id))
+    #                                        ^ not accept or defer
+    events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
     assert client.run(events) is None
 
-    # item = rabbitmq_helper.next_item()
-    # assert item is None
+    # FIXME(willkg): Verify no payload was submitted
 
     stdout, stderr = capsys.readouterr()
     assert '|1|count|socorro.submitter.junk|' in stdout
-
-
-def test_junk_in_stage(client, rabbitmq_helper, capsys):
-    with CONFIG.override(env='stage'):
-        crash_id = 'de1bb258-cbbf-4589-a673-34f802160918'
-        #                                        ^ junk
-        events = client.build_crash_save_events(client.crash_id_to_path(crash_id))
-        assert client.run(events) is None
-
-        # item = rabbitmq_helper.next_item()
-        # assert item == crash_id
-
-        stdout, stderr = capsys.readouterr()
-        assert '|1|count|socorro.submitter.accept|' in stdout
 
 
 @pytest.mark.parametrize('data, expected', [
