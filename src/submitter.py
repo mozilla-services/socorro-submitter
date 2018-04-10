@@ -211,8 +211,9 @@ def s3_fetch(client, bucket, key):
 
     """
     data = io.BytesIO()
+    print('s3_fetch', bucket, key)
     client.download_fileobj(bucket, key, data)
-    return data.read()
+    return data.getvalue()
 
 
 def generate_s3_key(kind, crash_id):
@@ -236,12 +237,13 @@ def generate_s3_key(kind, crash_id):
 def fetch_raw_crash(client, bucket, crash_id):
     """Fetches raw crash and converts from JSON to Python dict"""
     key = generate_s3_key('raw_crash', crash_id)
-    return json.loads(s3_fetch(client, bucket, key))
+    data = s3_fetch(client, bucket, key).decode('utf-8')
+    return json.loads(data)
 
 
 def fetch_dumps(client, bucket, crash_id):
     """Fetches dump data and returns list of (name, data) tuples"""
-    dumps = []
+    dumps = {}
 
     # fetch dump_names
     key = generate_s3_key('dump_names', crash_id)
@@ -250,7 +252,7 @@ def fetch_dumps(client, bucket, crash_id):
     # fetch dumps
     for name in dump_names:
         key = generate_s3_key(name, crash_id)
-        dumps[name] = json.loads(s3_fetch(client, bucket, key))
+        dumps[name] = s3_fetch(client, bucket, key)
 
     return dumps
 
@@ -279,7 +281,9 @@ def multipart_encode(raw_crash, dumps):
     :returns: tuple of (bytes, headers dict)
 
     """
-    boundary = uuid.uuid4().hex
+    # NOTE(willkg): This is the result of uuid.uuid4().hex. We just need a
+    # unique string to denote the boundary between parts in the payload.
+    boundary = '01659896d5dc42cabd7f3d8a3dcdd3bb'
     output = io.BytesIO()
 
     # Package up raw crash metadata--sort them so they're stable in the payload
@@ -293,7 +297,7 @@ def multipart_encode(raw_crash, dumps):
         output.write(smart_bytes(val))
 
     # Insert dump data--sort them so they're stable in the payload
-    for name, data in sorted(dumps):
+    for name, data in sorted(dumps.items()):
         output.write(smart_bytes('--%s\r\n' % boundary))
 
         # dumps are sent as streams
@@ -376,15 +380,14 @@ def handler(event, context):
         except Exception:
             statsd_incr('socorro.submitter.unknown_s3fetch_error', value=1)
             logger.exception('Error: s3 fetch failed for unknown reason: %s', crash_id)
-            continue
+            raise
 
         try:
             # Assemble payload and headers
             payload, headers = multipart_encode(raw_crash, dumps)
 
             # POST crash to new environment
-            logger.debug('posting crash of size %d' % len(payload))
-            return requests.post(
+            requests.post(
                 CONFIG.destination_url,
                 headers=headers,
                 data=payload
