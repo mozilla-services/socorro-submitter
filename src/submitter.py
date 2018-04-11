@@ -24,6 +24,11 @@ import requests
 ACCEPT = '0'
 DEFER = '1'
 
+# List of keys in the raw crash to ignore
+RAW_CRASH_KEYS_IGNORE = [
+    'dump_checksums'
+]
+
 NOVALUE = object()
 
 
@@ -34,7 +39,7 @@ logging.config.dictConfig({
     'formatters': {
         'mozlog': {
             '()': 'dockerflow.logging.JsonLogFormatter',
-            'logger_name': 'antenna',
+            'logger_name': 'socorrosubmitter',
         },
     },
     'handlers': {
@@ -210,7 +215,6 @@ def s3_fetch(client, bucket, key):
 
     """
     data = io.BytesIO()
-    print('s3_fetch', bucket, key)
     client.download_fileobj(bucket, key, data)
     return data.getvalue()
 
@@ -225,7 +229,7 @@ def generate_s3_key(kind, crash_id):
 
     """
     if kind == 'raw_crash':
-        return 'v2/raw_crash/%s/%s/%s' % (crash_id[0:3], crash_id[-6:], crash_id)
+        return 'v2/raw_crash/%s/20%s/%s' % (crash_id[0:3], crash_id[-6:], crash_id)
     if kind == 'dump_names':
         return 'v1/dump_names/%s' % crash_id
     if kind in (None, '', 'upload_file_minidump'):
@@ -287,13 +291,17 @@ def multipart_encode(raw_crash, dumps):
 
     # Package up raw crash metadata--sort them so they're stable in the payload
     for key, val in sorted(raw_crash.items()):
+        if key in RAW_CRASH_KEYS_IGNORE:
+            continue
+
         output.write(smart_bytes('--%s\r\n' % boundary))
         output.write(
             smart_bytes('Content-Disposition: form-data; name="%s"\r\n' % Header(key).encode())
         )
         output.write(b'Content-Type: text/plain; charset=utf-8\r\n')
-        output.write(b'\r\n\r\n')
+        output.write(b'\r\n')
         output.write(smart_bytes(val))
+        output.write(b'\r\n')
 
     # Insert dump data--sort them so they're stable in the payload
     for name, data in sorted(dumps.items()):
@@ -302,13 +310,12 @@ def multipart_encode(raw_crash, dumps):
         # dumps are sent as streams
         output.write(
             smart_bytes(
-                'Content-Disposition: form-data; name="%s"; filename="%s"\r\n' % (
-                    (Header(key).encode(), Header(name).encode())
-                )
+                'Content-Disposition: form-data; name="%s"; filename="file.dump"\r\n' %
+                Header(name).encode()
             )
         )
         output.write(b'Content-Type: application/octet-stream\r\n')
-        output.write(b'\r\n\r\n')
+        output.write(b'\r\n')
         output.write(data)
         output.write(b'\r\n')
 
@@ -349,7 +356,7 @@ def handler(event, context):
             statsd_incr('socorro.submitter.defer', value=1)
             continue
 
-        # Throttle any ACCEPTed records
+        # Throttle ACCEPTed records
         if CONFIG.throttle < 100 and random.randint(0, 100) > CONFIG.throttle:
             statsd_incr('socorro.submitter.throttled', value=1)
             continue

@@ -22,6 +22,7 @@ build: build-containers build-libs
 clean:
 	-rm -rf build
 	-rm .container-*
+	-rm -rf fakedata_dest
 
 test-flake8: .container-test
 	${DC} run test flake8 src/
