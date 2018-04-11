@@ -138,10 +138,7 @@ class FakeCollector(object):
     @contextmanager
     def setup_mock(self):
         with requests_mock.mock() as rm:
-            rm.post(
-                '//fakecollector:8000/submit',
-                text=self.handle_post,
-            )
+            rm.post('//antenna:8000/submit', text=self.handle_post)
             yield self
 
 

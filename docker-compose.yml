@@ -11,7 +11,7 @@ services:
     env_file: docker/lambda.env
     volumes:
       - .:/app
-    links:
+    depends_on:
       - localstack-s3
 
   lambda-run:
@@ -20,7 +20,8 @@ services:
     env_file: docker/lambda.env
     volumes:
       - ./build:/var/task
-    links:
+    depends_on:
+      - antenna
       - localstack-s3
 
   lambda-build:
@@ -39,3 +40,16 @@ services:
       - HOSTNAME=localstack-s3
     ports:
       - "5000:5000"
+
+  # https://hub.docker.com/r/mozilla/antenna/
+  # socorro collector collecting to a separate S3 bucket
+  antenna:
+    image: mozilla/antenna:latest
+    env_file: docker/antenna.env
+    depends_on:
+      - localstack-s3
+    expose:
+      - 8000
+    ports:
+      - "8888:8000"
+    command: ./bin/run_web.sh
