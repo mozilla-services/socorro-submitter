@@ -1,0 +1,55 @@
+# docker-compose for socorro-collector that imitates the Mozilla
+# Socorro prod environment.
+#
+# Note: Requires docker 1.10.0+ and docker-compose 1.6.0+.
+version: "2"
+services:
+  test:
+    build:
+      context: .
+      dockerfile: docker/test/Dockerfile
+    env_file: docker/lambda.env
+    volumes:
+      - .:/app
+    depends_on:
+      - localstack-s3
+
+  lambda-run:
+    # https://hub.docker.com/r/lambci/lambda/
+    image: lambci/lambda:python3.6
+    env_file: docker/lambda.env
+    volumes:
+      - ./build:/var/task
+    depends_on:
+      - antenna
+      - localstack-s3
+
+  lambda-build:
+    # https://hub.docker.com/r/lambci/lambda/
+    image: lambci/lambda:build-python3.6
+    volumes:
+      - .:/tmp
+
+  # https://hub.docker.com/r/localstack/localstack/
+  # localstack running a fake S3
+  localstack-s3:
+    image: localstack/localstack:0.8.6
+    environment:
+      - SERVICES=s3:5000
+      - DEFAULT_REGION=us-west-2
+      - HOSTNAME=localstack-s3
+    ports:
+      - "5000:5000"
+
+  # https://hub.docker.com/r/mozilla/antenna/
+  # socorro collector collecting to a separate S3 bucket
+  antenna:
+    image: mozilla/antenna:latest
+    env_file: docker/antenna.env
+    depends_on:
+      - localstack-s3
+    expose:
+      - 8000
+    ports:
+      - "8888:8000"
+    command: ./bin/run_web.sh
