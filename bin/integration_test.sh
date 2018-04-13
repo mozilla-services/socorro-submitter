@@ -26,8 +26,11 @@ rm -rf ${DESTDIR}
 mkdir ${DESTDIR}
 
 # Start localstack-s3 and make sure buckets are clean
-# FIXME(willkg): need to wait until localstack-s3 is up
 docker-compose up -d localstack-s3
+# NOTE(willkg): This is localhost:5000 from the host and localstack-s3:5000
+# from inside the containers.
+./bin/urlwait.py http://localhost:5000/
+
 # FIXME(willkg): check the bucket and delete it if it exists
 docker-compose run -u "${HOSTUSER}" test bash -c "
     ./bin/aws_s3.sh rb --force ${SOURCEBUCKET} 2>&1 > /dev/null;
@@ -39,6 +42,9 @@ docker-compose run -u "${HOSTUSER}" test bash -c "
 "
 # Start antenna
 docker-compose up -d antenna
+# NOTE(willkg): This is localhost:8888 from the host and antenna:8888
+# from inside the containers.
+./bin/urlwait.py http://localhost:8888/
 
 # Get a crash id from the fakecrashdata directory
 # CRASHID=$(find fakecrashdata/ -type f | grep raw_crash | awk -F / '{print $6}')

@@ -38,6 +38,8 @@ services:
       - SERVICES=s3:5000
       - DEFAULT_REGION=us-west-2
       - HOSTNAME=localstack-s3
+    expose:
+      - 5000
     ports:
       - "5000:5000"
 
