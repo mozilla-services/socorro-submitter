@@ -18,16 +18,12 @@ import time
 import boto3
 from botocore.client import Config as Boto3Config
 import requests
+import six
 
 
 # NOTE(willkg): These values match Antenna throttling return values
 ACCEPT = '0'
 DEFER = '1'
-
-# List of keys in the raw crash to ignore
-RAW_CRASH_KEYS_IGNORE = [
-    'dump_checksums'
-]
 
 NOVALUE = object()
 
@@ -261,13 +257,14 @@ def fetch_dumps(client, bucket, crash_id):
 
 
 def smart_bytes(thing):
-    if isinstance(thing, bytes):
+    """This converts things to a string representation then to bytes"""
+    if isinstance(thing, six.binary_type):
         return thing
 
-    if isinstance(thing, (float, int)):
-        return str(thing).encode('utf-8')
+    if isinstance(thing, six.string_types):
+        return thing.encode('utf-8')
 
-    return thing.encode('utf-8')
+    return repr(thing).encode('utf-8')
 
 
 def multipart_encode(raw_crash, dumps):
@@ -291,9 +288,6 @@ def multipart_encode(raw_crash, dumps):
 
     # Package up raw crash metadata--sort them so they're stable in the payload
     for key, val in sorted(raw_crash.items()):
-        if key in RAW_CRASH_KEYS_IGNORE:
-            continue
-
         output.write(smart_bytes('--%s\r\n' % boundary))
         output.write(
             smart_bytes('Content-Disposition: form-data; name="%s"\r\n' % Header(key).encode())
