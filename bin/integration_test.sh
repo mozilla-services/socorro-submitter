@@ -29,7 +29,7 @@ mkdir ${DESTDIR}
 docker-compose up -d localstack-s3
 # NOTE(willkg): This is localhost:5000 from the host and localstack-s3:5000
 # from inside the containers.
-./bin/urlwait.py http://localhost:5000/
+./bin/wait.sh localhost 5000
 
 # FIXME(willkg): check the bucket and delete it if it exists
 docker-compose run -u "${HOSTUSER}" test bash -c "
@@ -44,7 +44,7 @@ docker-compose run -u "${HOSTUSER}" test bash -c "
 docker-compose up -d antenna
 # NOTE(willkg): This is localhost:8888 from the host and antenna:8888
 # from inside the containers.
-./bin/urlwait.py http://localhost:8888/
+./bin/wait.sh localhost 8888
 
 # Get a crash id from the fakecrashdata directory
 # CRASHID=$(find fakecrashdata/ -type f | grep raw_crash | awk -F / '{print $6}')
