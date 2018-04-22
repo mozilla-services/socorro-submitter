@@ -26,7 +26,7 @@ do
     nc -z ${HOST} ${PORT}
     if [ $? -eq 0 ]
     then
-        echo "Success!"
+        echo "Success: ${HOST}:${PORT} is listening!"
         break
     fi
     echo "Waiting... (${count}/${TIMEOUT})"

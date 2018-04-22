@@ -74,7 +74,7 @@ echo ">>> Accepted!"
 echo ">>> CHECK DEST ${DESTDIR} ${DESTBUCKET}"
 
 # Copy S3 dest bucket into dest directory
-docker-compose run -u "${HOSTUSER}" test ./bin/aws_s3.sh sync ${DESTBUCKET} ${DESTDIR}
+docker-compose run -u "${HOSTUSER}" --rm test ./bin/aws_s3.sh sync ${DESTBUCKET} ${DESTDIR}
 
 # Check the data in the S3 dest bucket
 FILES=$(cd ${SOURCEDIR} && find . -type f)
