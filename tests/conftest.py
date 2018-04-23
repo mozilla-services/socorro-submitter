@@ -95,7 +95,7 @@ class SubmitterClient:
 
 @pytest.fixture
 def client():
-    """Returns an AWS Lambda mock that runs submitter thing"""
+    """Returns an AWS Lambda runtime for generating events and invoking the function"""
     return SubmitterClient()
 
 
