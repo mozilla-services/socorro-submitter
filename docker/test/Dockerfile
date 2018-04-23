@@ -15,8 +15,7 @@ RUN pip install -U 'pip>=8' && \
 COPY . /app/
 
 # Install libs into /app/build
-RUN pip install --ignore-installed --no-cache-dir -r requirements.txt -t /app/build
-RUN cp src/submitter.py /app/build
+RUN ./bin/run_build.sh
 
 # Set Python-related environment variables to reduce annoying-ness
 ENV PYTHONUNBUFFERED 1
