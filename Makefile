@@ -35,6 +35,6 @@ test: test-flake8 test-pytest
 testshell: .container-test
 	${DC} run test bash
 
-.PHONY: default build clean build-containers build-libs build test-flake8 test-pytest test-integration test testshell
+.PHONY: default build clean build-containers build-libs build test-flake8 test-pytest test testshell
 
 .DEFAULT_GOAL := help

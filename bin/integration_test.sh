@@ -54,7 +54,7 @@ CRASHKEY="v2/raw_crash/${CRASHID:0:3}/20${CRASHID:30:6}/${CRASHID}"
 # Copy source crash data into S3 source bucket
 docker-compose run -u "${HOSTUSER}" test ./bin/aws_s3.sh sync ${SOURCEDIR} ${SOURCEBUCKET}
 
-# Gemerate am event
+# Generate am event
 echo ">>> GENERATE AN EVENT"
 EVENT=$(./bin/generate_event.py --bucket source_bucket --key ${CRASHKEY})
 
