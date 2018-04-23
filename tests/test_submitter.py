@@ -165,7 +165,7 @@ def test_defer_instruction_ignored(client, capsys, fakes3, mock_collector):
     assert '|1|count|socorro.submitter.defer|' in stdout
 
 
-def test_invalid_instruction_ignored(client, fakes3, mock_collector):
+def test_invalid_instruction_ignored(client, capsys, fakes3, mock_collector):
     crash_id = 'de1bb258-cbbf-4589-a673-34f802160918'
     #                                        ^ not accept or defer
     events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
@@ -173,6 +173,10 @@ def test_invalid_instruction_ignored(client, fakes3, mock_collector):
 
     # Verify no payload was submitted
     assert len(mock_collector.payloads) == 0
+
+    stdout, stderr = capsys.readouterr()
+    assert 'accept' not in stdout
+    assert 'defer' not in stdout
 
 
 def test_throttle_accepted(client, capsys, mocker, fakes3, mock_collector):
