@@ -13,7 +13,7 @@ import json
 import sys
 
 
-def make_event(key, event_name='ObjectCreated:Put', bucket='dev_bucket'):
+def make_event(key, event_name, bucket):
     """Generates an S3 event
 
     .. Note::
