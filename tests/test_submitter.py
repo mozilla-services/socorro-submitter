@@ -175,7 +175,10 @@ def test_invalid_instruction_ignored(client, fakes3, mock_collector):
     assert len(mock_collector.payloads) == 0
 
 
-def test_throttle_accepted(client, capsys, mock_randint_always_20, fakes3, mock_collector):
+def test_throttle_accepted(client, capsys, mocker, fakes3, mock_collector):
+    always_20 = mocker.patch('random.randint')
+    always_20.return_value = 20
+
     fakes3.create_bucket()
     fakes3.save_crash(
         raw_crash={
@@ -201,7 +204,10 @@ def test_throttle_accepted(client, capsys, mock_randint_always_20, fakes3, mock_
     assert '|1|count|socorro.submitter.accept|' in stdout
 
 
-def test_throttle_skipped(client, capsys, mock_randint_always_20, fakes3, mock_collector):
+def test_throttle_skipped(client, capsys, mocker, fakes3, mock_collector):
+    always_20 = mocker.patch('random.randint')
+    always_20.return_value = 20
+
     fakes3.create_bucket()
     fakes3.save_crash(
         raw_crash={

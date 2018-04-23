@@ -6,7 +6,6 @@ from contextlib import contextmanager
 import io
 import json
 import os
-import random
 import sys
 import uuid
 
@@ -98,20 +97,6 @@ class SubmitterClient:
 def client():
     """Returns an AWS Lambda mock that runs submitter thing"""
     return SubmitterClient()
-
-
-@pytest.yield_fixture
-def mock_randint_always_20():
-    """Mocks random.randint to always return 20"""
-    old_randint = random.randint
-
-    def mock_randint(a, b):
-        print('MOCKED RANDINT')
-        return 20
-
-    random.randint = mock_randint
-    yield
-    random.randint = old_randint
 
 
 class FakeCollector(object):
