@@ -15,7 +15,7 @@ help:
 build-containers: .container-test
 
 build-libs:
-	${DC} run -u "${HOSTUSER}" test ./bin/run_build.sh
+	${DC} run -u "${HOSTUSER}" lambda-build bash -c "cd /tmp && /tmp/bin/run_build.sh"
 
 build: build-containers build-libs
 
