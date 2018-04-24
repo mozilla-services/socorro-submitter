@@ -69,11 +69,11 @@ class Config(object):
         self.throttle = int(self.get_from_env('THROTTLE', '10'))
         self.destination_url = self.get_from_env('DESTINATION_URL')
         self.s3_bucket = self.get_from_env('S3_BUCKET')
+        self.s3_region_name = self.get_from_env('S3_REGION_NAME')
 
         # These are only used for local development
         self.s3_access_key = self.get_from_env('S3_ACCESS_KEY', '')
         self.s3_secret_access_key = self.get_from_env('S3_SECRET_ACCESS_KEY', '')
-        self.s3_region_name = self.get_from_env('S3_REGION_NAME')
         self.s3_endpoint_url = self.get_from_env('S3_ENDPOINT_URL', '')
 
     def get_from_env(self, key, default=NOVALUE):

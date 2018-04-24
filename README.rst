@@ -122,7 +122,20 @@ to.
 
 Required environment variables:
 
-``SUBMITTER_AWS_REGION``
-    The AWS region to use.
+* ``SUBMITTER_ENV_NAME``: The environment name. This is for tagging metrics with
+  the environment.
+* ``SUBMITTER_THROTTLE``: The percent of crashes to submit; 0 is none, 100 is
+  all.
+* ``SUBMITTER_DESTINATION_URL``: The full url of the collector to post crashes
+  to.
+* ``SUBMITTER_S3_BUCKET``: The s3 bucket to pull crash data from.
+* ``SUBMITTER_S3_REGION_NAME``: The AWS region to use.
+
+Then for local development, you need these:
+
+* ``SUBMITTER_S3_ACCESS_KEY``: The s3 access key to use to access the bucket.
+* ``SUBMITTER_S3_SECRET_ACCESS_KEY``: The s3 secret access key to use to access
+  the bucket.
+* ``SUBMITTER_S3_ENDPOINT_URL``: The endpoint url for the fake s3.
 
 If any of these are missing from the environment, Submitter will raise a ``KeyError``.
