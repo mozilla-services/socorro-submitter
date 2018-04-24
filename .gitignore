@@ -1,3 +1,4 @@
 .container*
 build/
 fakedata_dest/
+submitter.zip
