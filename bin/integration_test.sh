@@ -22,8 +22,8 @@ DESTBUCKET="s3://dest_bucket/"
 echo ">>> SETUP"
 
 # Delete and recreate DESTDIR
-rm -rf ${DESTDIR}
-mkdir ${DESTDIR}
+rm -rf "${DESTDIR}"
+mkdir "${DESTDIR}"
 
 # Start localstack-s3 and make sure buckets are clean
 docker-compose up -d localstack-s3
@@ -33,11 +33,11 @@ docker-compose up -d localstack-s3
 
 # FIXME(willkg): check the bucket and delete it if it exists
 docker-compose run -u "${HOSTUSER}" test bash -c "
-    ./bin/aws_s3.sh rb --force ${SOURCEBUCKET} 2>&1 > /dev/null;
+    ./bin/aws_s3.sh rb --force ${SOURCEBUCKET} >/dev/null 2>&1;
     ./bin/aws_s3.sh mb ${SOURCEBUCKET};
 "
 docker-compose run -u "${HOSTUSER}" test bash -c "
-    ./bin/aws_s3.sh rb --force ${DESTBUCKET} 2>&1 > /dev/null;
+    ./bin/aws_s3.sh rb --force ${DESTBUCKET} >/dev/null 2>&1;
     ./bin/aws_s3.sh mb ${DESTBUCKET}
 "
 # Start antenna
@@ -52,36 +52,53 @@ CRASHID="11107bd0-2d1c-4865-af09-80bc00180313"
 CRASHKEY="v2/raw_crash/${CRASHID:0:3}/20${CRASHID:30:6}/${CRASHID}"
 
 # Copy source crash data into S3 source bucket
-docker-compose run -u "${HOSTUSER}" test ./bin/aws_s3.sh sync ${SOURCEDIR} ${SOURCEBUCKET}
+docker-compose run -u "${HOSTUSER}" test ./bin/aws_s3.sh sync "${SOURCEDIR}" "${SOURCEBUCKET}"
 
 # Generate am event
 echo ">>> GENERATE AN EVENT"
-EVENT=$(./bin/generate_event.py --bucket source_bucket --key ${CRASHKEY})
+EVENT=$(./bin/generate_event.py --bucket source_bucket --key "${CRASHKEY}")
 
-# Loop until one of the invokes accepts the event and submits it to the
-# destination collector
-echo ">>> INVOKE UNTIL ACCEPTED"
-IS_ACCEPT=
-while [ -z "${ISACCEPT}" ]
-do
-    echo "Run invoke..."
-    OUTPUT=$(echo "${EVENT}" | ./bin/run_invoke.sh 2>&1) || true
-    ISACCEPT=$(echo "${OUTPUT}" | grep "socorro.submitter.accept") || true
-    echo "${OUTPUT}"
-done
-echo ">>> Accepted!"
+# Run invoke with THROTTLE=0 (submit nothing) and make sure it prints
+# "throttled"
+OUTPUT=$(echo "${EVENT}" | THROTTLE=0 ./bin/run_invoke.sh 2>&1) || true
+echo "${OUTPUT}"
+ISTHROTTLE=$(echo "${OUTPUT}" | grep "socorro.submitter.throttled") || true
+if [ -z "${ISTHROTTLE}" ]
+then
+    echo ">>> FAILED: THROTTLE=0, but \"throttled\" not printed out."
+    exit 1
+fi
 
-echo ">>> CHECK DEST ${DESTDIR} ${DESTBUCKET}"
+# Make sure nothing is in the dest bucket and thus nothing got submitted
+CONTENTS=$(docker-compose run --rm test ./bin/aws_s3.sh ls "${DESTBUCKET}")
+if [ "${CONTENTS}" != "" ]
+then
+    echo ">>> FAILED: THROTTLE=0, but something is in the dest bucket."
+    exit 1
+fi
+echo ">>> SUCCESS: THROTTLE=0 case submitted nothing!"
+
+# Run invoke with THROTTLE=100 (submit everything) and make sure it prints
+# "accept"
+OUTPUT=$(echo "${EVENT}" | THROTTLE=100 ./bin/run_invoke.sh 2>&1)
+echo "${OUTPUT}"
+ISACCEPT=$(echo "${OUTPUT}" | grep "socorro.submitter.accept") || true
+if [ -z "${ISTHROTTLE}" ]
+then
+    echo ">>> FAILED: THROTTLE=100, but \"accept\" not printed out."
+    exit 1
+fi
 
 # Copy S3 dest bucket into dest directory
-docker-compose run -u "${HOSTUSER}" --rm test ./bin/aws_s3.sh sync ${DESTBUCKET} ${DESTDIR}
+docker-compose run -u "${HOSTUSER}" --rm test ./bin/aws_s3.sh sync "${DESTBUCKET}" "${DESTDIR}"
 
-# Check the data in the S3 dest bucket
+# Make sure the crash is in the dest bucket and has the correct contents
 FILES=$(cd ${SOURCEDIR} && find . -type f)
 for FN in $FILES
 do
     echo "Verifying ${SOURCEDIR}${FN} ${DESTDIR}${FN}..."
-    ./bin/diff_files.py ${SOURCEDIR}${FN} ${DESTDIR}${FN}
+    ./bin/diff_files.py "${SOURCEDIR}${FN}" "${DESTDIR}${FN}"
 done
+echo ">>> SUCCESS: THROTTLE=100 case submitted data correctly!"
 
 echo ">>> SUCCESS: Integration test passed!"

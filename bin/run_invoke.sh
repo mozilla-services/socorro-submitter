@@ -14,10 +14,15 @@
 #
 # Usage: EVENT | ./bin/run_invoke.sh
 
+# Pass throttle through as an environment variable and default to 10 which
+# matches the script default
+THROTTLE=${THROTTLE:-10}
+
 # Note: Need to set DOCKER_LAMBDA_USE_STDIN to pipe events from stdin
 docker-compose run \
                --rm \
                -v "$PWD/build":/var/task \
                --service-ports \
                -e DOCKER_LAMBDA_USE_STDIN=1 \
+               -e SUBMITTER_THROTTLE="${THROTTLE}" \
                lambda-run submitter.handler $@
