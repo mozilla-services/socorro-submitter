@@ -21,10 +21,6 @@ import requests
 import six
 
 
-# NOTE(willkg): These values match Antenna throttling return values
-ACCEPT = '0'
-DEFER = '1'
-
 NOVALUE = object()
 
 
@@ -140,13 +136,7 @@ def is_crash_id(crash_id):
     :returns: True if it's a crash id and False if not
 
     """
-    return (
-        # Match structure
-        bool(CRASH_ID_RE.match(crash_id)) and
-
-        # The 7-to-last character is a throttle result
-        crash_id[-7] in (ACCEPT, DEFER)
-    )
+    return bool(CRASH_ID_RE.match(crash_id))
 
 
 def extract_crash_id_from_record(record):
@@ -161,8 +151,8 @@ def extract_crash_id_from_record(record):
     try:
         key = record['s3']['object']['key']
         logger.info('looking at key: %s', key)
-        if not key.startswith('v2/raw_crash/'):
-            logger.debug('%s: not a raw crash--ignoring', repr(key))
+        if not key.startswith('v1/processed_crash/'):
+            logger.debug('%s: not a processed crash--ignoring', repr(key))
             return None
         crash_id = key.rsplit('/', 1)[-1]
         if not is_crash_id(crash_id):
@@ -338,19 +328,14 @@ def handler(event, context):
         # Extract bucket name for debugging
         bucket = record['s3']['bucket']['name']
 
-        # Extract crash id--if it's not a raw_crash object, skip it.
+        # Extract crash id--if it's not a processed crash object, skip it.
         crash_id = extract_crash_id_from_record(record)
         if crash_id is None:
             continue
 
         logger.debug('saw crash id: %s in %s', crash_id, bucket)
 
-        # Skip crashes that are marked DEFER
-        if get_antenna_throttle_result(crash_id) == DEFER:
-            statsd_incr('socorro.submitter.defer', value=1)
-            continue
-
-        # Throttle ACCEPTed records
+        # Throttle crashes
         if CONFIG.throttle < 100 and random.randint(0, 100) > CONFIG.throttle:
             statsd_incr('socorro.submitter.throttled', value=1)
             continue
@@ -373,7 +358,7 @@ def handler(event, context):
                 endpoint_url=CONFIG.s3_endpoint_url
             )
 
-            # Fetch crash data from S3
+            # Fetch raw crash data from S3
             raw_crash = fetch_raw_crash(client, CONFIG.s3_bucket, crash_id)
             dumps = fetch_dumps(client, CONFIG.s3_bucket, crash_id)
 

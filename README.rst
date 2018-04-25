@@ -1,33 +1,23 @@
 Submitter
 =========
 
-AWS Lambda function that reacts to S3 object save events and submits a
-specified percentage of the accepted ones to another environment.
+AWS Lambda function that reacts to S3 object save events for processed crash
+files and submits a specified percentage to another environment.
 
 
 Details
 =======
 
-Raw crash files have keys like this::
+Processed crash files have keys like this::
 
-  v2/raw_crash/000/20180313/00007bd0-2d1c-4865-af09-80bc00180313
+  v1/processed_crash/00007bd0-2d1c-4865-af09-80bc00180313
 
 
-The accept/defer annotation is the 7th-to-last character of the key::
-
-  v2/raw_crash/000/20180313/00007bd0-2d1c-4865-af09-80bc00180313
-                                                         ^
-
-* ``0`` - defer
-* ``1`` - accept
-* any other values are junk and ignored
-
-If this file is a raw crash and it was accepted for processing, then the
-submitter will "roll a die" to decide whether to submit to a specified
+The submitter will "roll a die" to decide whether to submit to a specified
 environment.
 
-If so, it'll pull all the data from S3, package it up, and HTTP POST it to the
-collector of the specified environment.
+If so, it'll pull all the raw crash data from S3, package it up, and HTTP POST
+it to the collector of the specified environment.
 
 
 Quickstart
@@ -81,7 +71,7 @@ Quickstart
 
    .. code-block:: shell
 
-      $ ./bin/generate_event.py --key v2/raw_crash/000/20180313/00007bd0-2d1c-4865-af09-80bc00180313 > event.json
+      $ ./bin/generate_event.py --key v2/processed_crash/00007bd0-2d1c-4865-af09-80bc00180313 > event.json
       $ cat event.json | ./bin/run_invoke.sh
       <invoke output>
 

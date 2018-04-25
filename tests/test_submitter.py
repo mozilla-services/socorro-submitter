@@ -152,33 +152,6 @@ def test_non_put_event_ignored(client, fakes3, mock_collector):
     assert len(mock_collector.payloads) == 0
 
 
-def test_defer_instruction_ignored(client, capsys, fakes3, mock_collector):
-    crash_id = 'de1bb258-cbbf-4589-a673-34f801160918'
-    #                                        ^ defer
-    events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
-    assert client.run(events) is None
-
-    # Verify no payload was submitted
-    assert len(mock_collector.payloads) == 0
-
-    stdout, stderr = capsys.readouterr()
-    assert '|1|count|socorro.submitter.defer|' in stdout
-
-
-def test_invalid_instruction_ignored(client, capsys, fakes3, mock_collector):
-    crash_id = 'de1bb258-cbbf-4589-a673-34f802160918'
-    #                                        ^ not accept or defer
-    events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
-    assert client.run(events) is None
-
-    # Verify no payload was submitted
-    assert len(mock_collector.payloads) == 0
-
-    stdout, stderr = capsys.readouterr()
-    assert 'accept' not in stdout
-    assert 'defer' not in stdout
-
-
 def test_throttle_accepted(client, capsys, mocker, fakes3, mock_collector):
     always_20 = mocker.patch('random.randint')
     always_20.return_value = 20
@@ -265,22 +238,20 @@ def test_env_tag_added_to_statds_incr(client, capsys, fakes3, mock_collector):
 
 
 @pytest.mark.parametrize('data, expected', [
-    # Raw crash file
+    # Processed crash file
     (
-        'v2/raw_crash/de1/20160918/de1bb258-cbbf-4589-a673-34f800160918',
+        'v1/processed_crash/de1bb258-cbbf-4589-a673-34f800160918',
         'de1bb258-cbbf-4589-a673-34f800160918'
     ),
 
     # Other files that get saved in the same bucket
     ('v1/dump_names/de1bb258-cbbf-4589-a673-34f800160918', None),
     ('v1/upload_file_minidump/de1bb258-cbbf-4589-a673-34f800160918', None),
+    ('v2/raw_crash/de1/20160918/de1bb258-cbbf-4589-a673-34f800160918', None),
 
     # Test-like files we might have pushed places to make sure things are working
-    ('v2/raw_crash/de1/20160918/test', None),
+    ('v1/processed_crash/test', None),
     ('foo/bar/test', None),
-
-    # Junk in accept/defer position
-    ('v2/raw_crash/edd/20170404/edd0cf02-9e6f-443a-b098-8274b2170404', None),
 ])
 def test_extract_crash_id_from_record(data, expected, client):
     record = client.build_crash_save_events(data)['Records'][0]
