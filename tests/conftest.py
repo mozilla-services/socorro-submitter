@@ -58,11 +58,7 @@ class LambdaContext:
 class SubmitterClient:
     """Class for submitter in the AWS lambda environment"""
     def crash_id_to_key(self, crash_id):
-        return 'v2/raw_crash/{entropy}/{date}/{crashid}'.format(
-            entropy=crash_id[0:3],
-            date='20' + crash_id[-6:],
-            crashid=crash_id
-        )
+        return 'v1/processed_crash/%s' % crash_id
 
     def build_crash_save_events(self, keys):
         if isinstance(keys, str):

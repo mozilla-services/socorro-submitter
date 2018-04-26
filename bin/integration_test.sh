@@ -47,9 +47,9 @@ docker-compose up -d antenna
 ./bin/wait.sh localhost 8888
 
 # Get a crash id from the fakecrashdata directory
-# CRASHID=$(find fakecrashdata/ -type f | grep raw_crash | awk -F / '{print $6}')
+# CRASHID=$(find fakecrashdata/ -type f | grep processed_crash | awk -F / '{print $6}')
 CRASHID="11107bd0-2d1c-4865-af09-80bc00180313"
-CRASHKEY="v2/raw_crash/${CRASHID:0:3}/20${CRASHID:30:6}/${CRASHID}"
+CRASHKEY="v1/processed_crash/${CRASHID}"
 
 # Copy source crash data into S3 source bucket
 docker-compose run -u "${HOSTUSER}" test ./bin/aws_s3.sh sync "${SOURCEDIR}" "${SOURCEBUCKET}"
