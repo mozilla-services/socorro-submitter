@@ -71,7 +71,7 @@ Quickstart
 
    .. code-block:: shell
 
-      $ ./bin/generate_event.py --key v2/processed_crash/00007bd0-2d1c-4865-af09-80bc00180313 > event.json
+      $ ./bin/generate_event.py --key v1/processed_crash/00007bd0-2d1c-4865-af09-80bc00180313 > event.json
       $ cat event.json | ./bin/run_invoke.sh
       <invoke output>
 
