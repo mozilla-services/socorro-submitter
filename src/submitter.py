@@ -170,7 +170,7 @@ def get_antenna_throttle_result(crash_id):
     return crash_id[-7]
 
 
-def build_s3_client(access_key, secret_access_key, region_name, endpoint_url):
+def build_s3_client(access_key, secret_access_key, region_name=None, endpoint_url=None):
     session_kwargs = {}
     if access_key and secret_access_key:
         session_kwargs['aws_access_key_id'] = access_key

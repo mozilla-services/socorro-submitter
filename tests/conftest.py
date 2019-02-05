@@ -15,7 +15,6 @@ from moto import mock_s3
 import requests_mock
 import pytest
 
-
 # Insert build/ directory in sys.path so we can import submitter
 sys.path.insert(
     0,
@@ -26,7 +25,7 @@ sys.path.insert(
 )
 
 
-from submitter import CONFIG, generate_s3_key, handler  # noqa
+from submitter import build_s3_client, CONFIG, generate_s3_key, handler  # noqa
 
 
 class LambdaContext:
@@ -135,22 +134,13 @@ class FakeS3(object):
     def jsonify(self, data):
         return json.dumps(data, sort_keys=True)
 
-    def build_s3_client(self):
-        session = boto3.session.Session()
-        return session.client(
-            service_name='s3',
-            config=Boto3Config(s3={'addressing_style': 'path'})
-        )
-
     def create_bucket(self):
         """Gets or creates the S3 bucket specified in ``CONFIG.s3_bucket``"""
-        bucket = CONFIG.s3_bucket
-        s3 = boto3.resource('s3')
-        bucket = s3.Bucket(bucket)
-        bucket.create()
+        client = build_s3_client('foo', 'foo')
+        client.create_bucket(Bucket=CONFIG.s3_bucket)
 
     def upload_file(self, key, data):
-        client = self.build_s3_client()
+        client = build_s3_client('foo', 'foo')
         print('upload_file', CONFIG.s3_bucket, key, data)
 
         client.upload_fileobj(
@@ -192,8 +182,8 @@ def fakes3():
     with mock_s3():
         # Fix config to use regular AWS so it's mocked
         s3_vars = {
-            's3_access_key': '',
-            's3_secret_access_key': '',
+            's3_access_key': 'foo',
+            's3_secret_access_key': 'foo',
             's3_endpoint_url': '',
             's3_region': ''
         }
