@@ -1,7 +1,7 @@
 Submitter
 =========
 
-AWS Lambda function that reacts to S3 object save events for processed crash
+AWS Lambda function that reacts to S3 object save events for raw crash
 files and submits a specified percentage to another environment.
 
 * Free software: Mozilla Public License version 2.0
@@ -13,9 +13,9 @@ files and submits a specified percentage to another environment.
 Details
 =======
 
-Processed crash files have keys like this::
+Raw crash files have keys like this::
 
-  v1/processed_crash/00007bd0-2d1c-4865-af09-80bc00180313
+  v2/raw_crash/000/20170413/00007bd0-2d1c-4865-af09-80bc00170413
 
 
 The submitter will "roll a die" to decide whether to submit to a specified
@@ -76,7 +76,7 @@ Quickstart
 
    .. code-block:: shell
 
-      $ ./bin/generate_event.py --key v1/processed_crash/00007bd0-2d1c-4865-af09-80bc00180313 > event.json
+      $ ./bin/generate_event.py --key v2/raw_crash/000/20170413/00007bd0-2d1c-4865-af09-80bc00170413 > event.json
       $ cat event.json | ./bin/run_invoke.sh
       <invoke output>
 

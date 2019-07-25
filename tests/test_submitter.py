@@ -218,15 +218,15 @@ def test_env_tag_added_to_statds_incr(client, capsys, fakes3, mock_collector):
 @pytest.mark.parametrize(
     "data, expected",
     [
-        # Processed crash file
+        # Raw crash file
         (
-            "v1/processed_crash/de1bb258-cbbf-4589-a673-34f800160918",
+            "v2/raw_crash/de1/20160918/de1bb258-cbbf-4589-a673-34f800160918",
             "de1bb258-cbbf-4589-a673-34f800160918",
         ),
         # Other files that get saved in the same bucket
         ("v1/dump_names/de1bb258-cbbf-4589-a673-34f800160918", None),
         ("v1/upload_file_minidump/de1bb258-cbbf-4589-a673-34f800160918", None),
-        ("v2/raw_crash/de1/20160918/de1bb258-cbbf-4589-a673-34f800160918", None),
+        ("v1/processed_crash/de1bb258-cbbf-4589-a673-34f800160918", None),
         # Test-like files we might have pushed places to make sure things are working
         ("v1/processed_crash/test", None),
         ("foo/bar/test", None),
