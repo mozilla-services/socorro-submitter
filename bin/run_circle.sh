@@ -12,21 +12,18 @@
 #
 # Usage: ./bin/run_circle.sh
 
-docker-compose up -d rabbitmq
 docker network ls
 
-# Run flake8
+# Run lint
 docker run \
     --rm \
     --workdir=/app \
     --env-file=docker/lambda.env \
-    socorrosubmitter_test flake8 /app/build/submitter.py
+    socorrosubmitter_test bin/run_lint.sh
 
-# Run pytest
+# Run test
 docker run \
     --rm \
     --workdir=/app \
-    --network=socorrosubmitter_default \
-    --link=socorrosubmitter_rabbitmq_1 \
     --env-file=docker/lambda.env \
     socorrosubmitter_test pytest

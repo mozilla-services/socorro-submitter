@@ -22,24 +22,20 @@ def make_event(key, event_name, bucket):
 
     """
     return {
-        'Records': [
+        "Records": [
             {
-                'eventVersion': '2.0',
-                'eventSource': 'aws:s3',
-                'eventName': event_name,
-                's3': {
-                    's3SchemaVersion': '1.0',
-                    'object': {
-                        'key': key
+                "eventVersion": "2.0",
+                "eventSource": "aws:s3",
+                "eventName": event_name,
+                "s3": {
+                    "s3SchemaVersion": "1.0",
+                    "object": {"key": key},
+                    "bucket": {
+                        "arn": "arn:aws:s3:::" + bucket,
+                        "name": bucket,
+                        "ownerIdentity": {"principalId": "submitterrules"},
                     },
-                    'bucket': {
-                        'arn': 'arn:aws:s3:::' + bucket,
-                        'name': bucket,
-                        'ownerIdentity': {
-                            'principalId': 'submitterrules'
-                        }
-                    }
-                }
+                },
             }
         ]
     }
@@ -48,16 +44,13 @@ def make_event(key, event_name, bucket):
 def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--eventname', default='ObjectCreated:Put',
-        help='the event triggered'
+        "--eventname", default="ObjectCreated:Put", help="the event triggered"
     )
     parser.add_argument(
-        '--bucket', default='dev_bucket',
-        help='the bucket that generated the event'
+        "--bucket", default="dev_bucket", help="the bucket that generated the event"
     )
     parser.add_argument(
-        '--key', default='',
-        help='the key for the S3 object that triggered the event'
+        "--key", default="", help="the key for the S3 object that triggered the event"
     )
     args = parser.parse_args(argv)
 
@@ -66,5 +59,5 @@ def main(argv):
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
