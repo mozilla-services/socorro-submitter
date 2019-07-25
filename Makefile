@@ -1,3 +1,7 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 DC := $(shell which docker-compose)
 HOSTUSER := $(shell id -u):$(shell id -g)
 
@@ -8,11 +12,13 @@ help: default
 default:
 	@echo "Please do \"make <TARGET>\" where TARGET is one of:"
 	@echo "  build        - install Python libs and build Docker containers"
+	@echo "  lint         - lint code"
+	@echo "  lintfix      - reformat code"
 	@echo "  test         - run tests"
 	@echo "  testshell    - open a shell in the test container"
 	@echo "  clean        - remove build files"
 
-.container-test: docker/test/Dockerfile requirements-dev.txt
+.container-test:
 	${DC} build test
 	touch .container-test
 
@@ -32,16 +38,17 @@ clean:
 	-rm .container-*
 	-rm -rf fakedata_dest
 
-.PHONY: test-flake8
-test-flake8: .container-test
-	${DC} run test flake8 src/
+.PHONY: lint
+lint: .container-test
+	${DC} run test bin/run_lint.sh
 
-.PHONY: test-pytest
-test-pytest: .container-test
-	${DC} run test py.test
+.PHONY: lintfix
+lintfix: .container-test
+	${DC} run -u "${HOSTUSER}" test bin/run_lint.sh --fix
 
 .PHONY: test
-test: test-flake8 test-pytest
+test: .container-test
+	${DC} run test py.test
 
 .PHONY: testshell
 testshell: .container-test
