@@ -147,10 +147,10 @@ def extract_crash_id_from_record(record):
     try:
         key = record["s3"]["object"]["key"]
         logger.info("looking at key: %s", key)
-        if not key.startswith("v1/processed_crash/"):
-            logger.debug("%s: not a processed crash--ignoring", repr(key))
+        if not key.startswith("v2/raw_crash/"):
+            logger.debug("%s: not a raw crash--ignoring", repr(key))
             return None
-        crash_id = key.rsplit("/", 1)[-1]
+        crash_id = key.rsplit("/", 3)[-1]
         if not is_crash_id(crash_id):
             logger.debug("%s: not a crash id--ignoring", repr(key))
             return None
@@ -329,7 +329,7 @@ def handler(event, context):
         # Extract bucket name for debugging
         bucket = record["s3"]["bucket"]["name"]
 
-        # Extract crash id--if it's not a processed crash object, skip it.
+        # Extract crash id--if it's not a raw crash object, skip it.
         crash_id = extract_crash_id_from_record(record)
         if crash_id is None:
             continue
