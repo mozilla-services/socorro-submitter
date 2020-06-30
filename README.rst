@@ -7,7 +7,7 @@ files and submits a specified percentage to another environment.
 * Free software: Mozilla Public License version 2.0
 * Documentation: this README
 * Bugs: `Report a bug <https://bugzilla.mozilla.org/enter_bug.cgi?format=__standard__&product=Socorro>`_
-* Community Participation Guidelines: `Guidelines <https://github.com/mozilla-services/socorro-submitter/blob/master/CODE_OF_CONDUCT.md>`_
+* Community Participation Guidelines: `Guidelines <https://github.com/mozilla-services/socorro-submitter/blob/main/CODE_OF_CONDUCT.md>`_
 
 
 Details
