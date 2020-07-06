@@ -6,10 +6,14 @@ RUN groupadd --gid 1001 app && useradd -g app --uid 1001 --shell /usr/sbin/nolog
 RUN apt-get update && \
     apt-get install -y gcc apt-transport-https
 
-COPY ./requirements-dev.txt /app/requirements-dev.txt
 COPY ./requirements.txt /app/requirements.txt
+COPY ./requirements-runtime.txt /app/requirements-runtime.txt
+COPY ./requirements-dev.txt /app/requirements-dev.txt
 
-RUN pip install -U 'pip>=8' && \
+# Install the Python dependencies that are in the Python Lambda runtime, then
+# the ones we need for socorro-submitter, then the ones needed for testing.
+RUN pip install --no-cache-dir -r requirements-runtime.txt && \
+    pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir -r requirements-dev.txt
 
 # Copy app repo

@@ -51,3 +51,7 @@ test: build  ## | Run tests.
 .PHONY: testshell  ## | Open shell in test container.
 testshell: build
 	${DC} run test bash
+
+.PHONY: runtimelist
+runtimelist: build  ## | List python packages in lambda runtime image
+	${DC} run --rm lambda-build bash -c "/tmp/bin/list_runtime_reqs.sh > /tmp/requirements-runtime.txt"
