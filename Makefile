@@ -16,18 +16,19 @@ help:
 	    | column -t  -s '|'
 
 .container-test:
-	${DC} build test
-	touch .container-test
+	make build-containers
 
 .PHONY: build-containers
-build-containers: .container-test
+build-containers:
+	${DC} build test
+	touch .container-test
 
 .PHONY: build-libs
 build-libs:
 	${DC} run -u "${HOSTUSER}" lambda-build bash -c "cd /tmp && /tmp/bin/run_build.sh"
 
 .PHONY: build
-build: build-containers build-libs  ## | Build Docker images.
+build: .container-test build-libs  ## | Build Docker images.
 
 .PHONY: clean
 clean:  ## | Remove build, test, and other artifacts.
@@ -44,9 +45,9 @@ lintfix: .container-test  ## | Reformat code.
 	${DC} run -u "${HOSTUSER}" test bin/run_lint.sh --fix
 
 .PHONY: test
-test: .container-test  ## | Run tests.
+test: build  ## | Run tests.
 	${DC} run test py.test
 
 .PHONY: testshell  ## | Open shell in test container.
-testshell: .container-test
+testshell: build
 	${DC} run test bash
