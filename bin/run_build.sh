@@ -11,6 +11,8 @@
 # Failures should cause setup to fail
 set -v -e -x
 
+echo ">>> Building socorro-submitter..."
+
 # Create the dir if it doesn't exist
 test -d build/ || mkdir build/
 
@@ -18,7 +20,9 @@ test -d build/ || mkdir build/
 pip install --disable-pip-version-check --ignore-installed --no-cache-dir -r requirements.txt -t build/
 
 # Check things are ok
-pip check --disable-pip-version-check
+# NOTE: We can't do this because the Python libraries already in the lambda
+# runtime container don't pass this. :(
+# pip check --disable-pip-version-check
 
 # Copy submitter into package
 cp src/submitter.py build/submitter.py
