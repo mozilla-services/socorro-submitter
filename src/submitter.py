@@ -29,6 +29,7 @@ logging.config.dictConfig(
         "version": 1,
         # NOTE(willkg): We don't disable existing loggers because that prevents
         # scripts that use this module from disabling logging.
+        "disable_existing_loggers": False,
         "formatters": {
             "mozlog": {
                 "()": "dockerflow.logging.JsonLogFormatter",
