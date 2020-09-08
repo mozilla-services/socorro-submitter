@@ -11,7 +11,7 @@ help:
 	@echo "Usage: make RULE"
 	@echo ""
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' Makefile \
-		| grep -v grep \
+	    | grep -v grep \
 	    | sed -n 's/^\(.*\): \(.*\)##\(.*\)/\1\3/p' \
 	    | column -t  -s '|'
 
