@@ -10,13 +10,29 @@
 
 set -e
 
+reportsuccess() {
+    echo ""
+    echo -e "\033[0;32m>>> TEST SUCCESS $1\033[0m"
+    echo ""
+}
+
+reportfail() {
+    echo ""
+    echo -e "\033[1;31m>>> TEST FAILED $1\033[0m"
+    echo ""
+}
+
+trap reportfail 0
+
 HOSTUSER="$(id -u):$(id -g)"
 
 SOURCEDIR="./fakedata_source/"
-SOURCEBUCKET="s3://source_bucket/"
+# NOTE(willkg): this matches docker/lambda.env SUBMITTER_S3_BUCKET
+SOURCEBUCKET="s3://source-bucket/"
 
 DESTDIR="./fakedata_dest/"
-DESTBUCKET="s3://dest_bucket/"
+# NOTE(willkg): this matches docker/antenna.env CRASHSTORAGE_BUCKET_NAME
+DESTBUCKET="s3://dest-bucket/"
 
 # Start antenna and localstack-s3 containers
 echo ">>> SETUP"
@@ -31,15 +47,9 @@ docker-compose up -d localstack-s3
 # from inside the containers.
 ./bin/wait.sh localhost 5000
 
-# FIXME(willkg): check the bucket and delete it if it exists
-docker-compose run -u "${HOSTUSER}" test bash -c "
-    ./bin/aws_s3.sh rb --force ${SOURCEBUCKET} >/dev/null 2>&1;
-    ./bin/aws_s3.sh mb ${SOURCEBUCKET};
-"
-docker-compose run -u "${HOSTUSER}" test bash -c "
-    ./bin/aws_s3.sh rb --force ${DESTBUCKET} >/dev/null 2>&1;
-    ./bin/aws_s3.sh mb ${DESTBUCKET}
-"
+# Set up integration test
+docker-compose run -u "${HOSTUSER}" test ./bin/setup_integration_test.sh
+
 # Start antenna
 docker-compose up -d antenna
 # NOTE(willkg): This is localhost:8888 from the host and antenna:8888
@@ -65,7 +75,7 @@ echo "${OUTPUT}"
 ISTHROTTLE=$(echo "${OUTPUT}" | grep "socorro.submitter.throttled") || true
 if [ -z "${ISTHROTTLE}" ]
 then
-    echo ">>> FAILED: THROTTLE=0, but \"throttled\" not printed out."
+    reportfail "THROTTLE=0, but \"throttled\" not printed out."
     exit 1
 fi
 
@@ -73,10 +83,10 @@ fi
 CONTENTS=$(docker-compose run --rm test ./bin/aws_s3.sh ls "${DESTBUCKET}")
 if [ "${CONTENTS}" != "" ]
 then
-    echo ">>> FAILED: THROTTLE=0, but something is in the dest bucket."
+    reportfail "THROTTLE=0, but something is in the dest bucket."
     exit 1
 fi
-echo ">>> SUCCESS: THROTTLE=0 case submitted nothing!"
+reportsuccess "THROTTLE=0 case submitted nothing!"
 
 # Run invoke with THROTTLE=100 (submit everything) and make sure it prints
 # "accept"
@@ -85,7 +95,7 @@ echo "${OUTPUT}"
 ISACCEPT=$(echo "${OUTPUT}" | grep "socorro.submitter.accept") || true
 if [ -z "${ISTHROTTLE}" ]
 then
-    echo ">>> FAILED: THROTTLE=100, but \"accept\" not printed out."
+    reportfail "THROTTLE=100, but \"accept\" not printed out."
     exit 1
 fi
 
@@ -99,6 +109,9 @@ do
     echo "Verifying ${SOURCEDIR}${FN} ${DESTDIR}${FN}..."
     ./bin/diff_files.py "${SOURCEDIR}${FN}" "${DESTDIR}${FN}"
 done
-echo ">>> SUCCESS: THROTTLE=100 case submitted data correctly!"
+reportsuccess "THROTTLE=100 case submitted data correctly!"
 
-echo ">>> SUCCESS: Integration test passed!"
+# If we got here, then the test succeeded, so nix the trap
+trap - 0
+
+echo -e "\033[0;32mSuccess!\033[0m"
