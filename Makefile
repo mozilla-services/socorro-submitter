@@ -32,6 +32,7 @@ build: .container-test build-libs  ## | Build Docker images.
 
 .PHONY: clean
 clean:  ## | Remove build, test, and other artifacts.
+	${DC} rm --stop --force -v
 	-rm -rf build
 	-rm .container-*
 	-rm -rf fakedata_dest
