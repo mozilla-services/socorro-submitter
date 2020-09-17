@@ -22,12 +22,7 @@ def get_type(filename):
 
 
 # Fields the collector adds when it ingests a crash report
-COLLECTOR_FIELDS = [
-    "timestamp",
-    "submitted_timestamp",
-    "collector_notes",
-    "payload"
-]
+COLLECTOR_FIELDS = ["timestamp", "submitted_timestamp", "collector_notes", "payload"]
 
 
 def is_same(src_filename, dest_filename):
