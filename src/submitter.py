@@ -17,42 +17,15 @@ import time
 
 import boto3
 from botocore.client import Config as Boto3Config
+from google.cloud.logging.client import Client as CloudLoggingClient
+from google.cloud.logging.handlers import CloudLoggingHandler
+from google.cloud.logging.handlers.transports.sync import SyncTransport
+from google.oauth2.service_account import Credentials
 import requests
 import six
 
 
 NOVALUE = object()
-
-
-logging.config.dictConfig(
-    {
-        "version": 1,
-        # NOTE(willkg): We don't disable existing loggers because that prevents
-        # scripts that use this module from disabling logging.
-        "disable_existing_loggers": False,
-        "formatters": {
-            "mozlog": {
-                "()": "dockerflow.logging.JsonLogFormatter",
-                "logger_name": "socorrosubmitter",
-            }
-        },
-        "handlers": {
-            "console": {
-                "level": "DEBUG",
-                "class": "logging.StreamHandler",
-                "formatter": "mozlog",
-            }
-        },
-        "root": {"handlers": ["console"], "level": "WARNING"},
-        "loggers": {
-            "submitter": {"propagate": False, "handlers": ["console"], "level": "DEBUG"}
-        },
-    }
-)
-
-
-logger = logging.getLogger("submitter")
-logger.setLevel(logging.DEBUG)
 
 
 class Config(object):
@@ -62,6 +35,9 @@ class Config(object):
         self.destination_url = self.get_from_env("DESTINATION_URL")
         self.s3_bucket = self.get_from_env("S3_BUCKET")
         self.s3_region_name = self.get_from_env("S3_REGION_NAME")
+
+        # For GCP stackdriver logging
+        self.gcp_credentials = self.get_from_env("GCP_CREDENTIALS", "")
 
         # These are only used for local development
         self.s3_access_key = self.get_from_env("S3_ACCESS_KEY", "")
@@ -95,6 +71,54 @@ class Config(object):
 
 
 CONFIG = Config()
+
+
+def setup_logging(config):
+    logging_config = {
+        "version": 1,
+        # NOTE(willkg): We don't disable existing loggers because that prevents
+        # scripts that use this module from disabling logging.
+        "disable_existing_loggers": False,
+        "formatters": {
+            "mozlog": {
+                "()": "dockerflow.logging.JsonLogFormatter",
+                "logger_name": "socorrosubmitter",
+            }
+        },
+        "handlers": {
+            "console": {
+                "level": "DEBUG",
+                "class": "logging.StreamHandler",
+                "formatter": "mozlog",
+            }
+        },
+        "root": {"handlers": ["console"], "level": "WARNING"},
+        "loggers": {
+            "submitter": {"propagate": False, "handlers": ["console"], "level": "INFO"}
+        },
+    }
+
+    logging.config.dictConfig(logging_config)
+
+    # If a GCP project id is set, then create a logging handler for it and set
+    # it up
+    if config.gcp_credentials:
+        acct_info = json.loads(config.gcp_credentials)
+        credentials = Credentials.from_service_account_info(acct_info)
+        client = CloudLoggingClient(
+            project=acct_info["project_id"], credentials=credentials
+        )
+
+        handler = CloudLoggingHandler(
+            client=client, name="socorro-stage-submitter", transport=SyncTransport
+        )
+        handler.setLevel(logging.DEBUG)
+        logging.getLogger().addHandler(handler)
+        logging.getLogger("submitter").addHandler(handler)
+
+
+setup_logging(CONFIG)
+LOGGER = logging.getLogger("submitter")
 
 
 def statsd_incr(key, value=1, tags=None):
@@ -147,18 +171,18 @@ def extract_crash_id_from_record(record):
     key = "not extracted yet"
     try:
         key = record["s3"]["object"]["key"]
-        logger.info("looking at key: %s", key)
+        LOGGER.debug("looking at key: %s", key)
         if not key.startswith("v2/raw_crash/"):
-            logger.debug("%s: not a raw crash--ignoring", repr(key))
+            LOGGER.debug("%s: not a raw crash--ignoring", repr(key))
             return None
         crash_id = key.rsplit("/", 3)[-1]
         if not is_crash_id(crash_id):
-            logger.debug("%s: not a crash id--ignoring", repr(key))
+            LOGGER.debug("%s: not a crash id--ignoring", repr(key))
             return None
         return crash_id
-    except (KeyError, IndexError) as exc:
-        logger.debug(
-            "%s: exception thrown when extracting crashid--ignoring: %s", repr(key), exc
+    except (KeyError, IndexError):
+        LOGGER.exception(
+            "%s: exception thrown when extracting crashid--ignoring", repr(key)
         )
         return None
 
@@ -318,7 +342,7 @@ def multipart_encode(raw_crash, dumps):
 def handler(event, context):
     accepted_records = []
 
-    logger.info("number of records: %d", len(event["Records"]))
+    LOGGER.debug("number of records: %d", len(event["Records"]))
     for record in event["Records"]:
         # Skip anything that's not an S3 ObjectCreated:put event
         if (
@@ -335,10 +359,11 @@ def handler(event, context):
         if crash_id is None:
             continue
 
-        logger.debug("saw crash id: %s in %s", crash_id, bucket)
+        LOGGER.debug("saw crash id: %s in %s", crash_id, bucket)
 
         # Throttle crashes
         if CONFIG.throttle < 100 and random.randint(0, 100) > CONFIG.throttle:
+            LOGGER.info("submitted: %s", crash_id)
             statsd_incr("socorro.submitter.throttled", value=1)
             continue
 
@@ -366,7 +391,7 @@ def handler(event, context):
 
         except Exception:
             statsd_incr("socorro.submitter.unknown_s3fetch_error", value=1)
-            logger.exception("Error: s3 fetch failed for unknown reason: %s", crash_id)
+            LOGGER.exception("Error: s3 fetch failed for unknown reason: %s", crash_id)
             raise
 
         try:
@@ -378,5 +403,5 @@ def handler(event, context):
 
         except Exception:
             statsd_incr("socorro.submitter.unknown_httppost_error", value=1)
-            logger.exception("Error: http post failed for unknown reason: %s", crash_id)
+            LOGGER.exception("Error: http post failed for unknown reason: %s", crash_id)
             raise

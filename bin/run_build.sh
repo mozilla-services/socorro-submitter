@@ -16,13 +16,14 @@ echo ">>> Building socorro-submitter..."
 # Create the dir if it doesn't exist
 test -d build/ || mkdir build/
 
-# Install requirements
-pip install --disable-pip-version-check --ignore-installed --no-cache-dir -r requirements.txt -t build/
-
-# Check things are ok
-# NOTE: We can't do this because the Python libraries already in the lambda
-# runtime container don't pass this. :(
-# pip check --disable-pip-version-check
+# Install requirements and dependencies into build/ ignoring whatever was
+# already in there
+pip install \
+    --disable-pip-version-check \
+    --ignore-installed \
+    --no-cache-dir \
+    -r requirements.txt \
+    --target build/
 
 # Copy submitter into package
 cp src/submitter.py build/submitter.py

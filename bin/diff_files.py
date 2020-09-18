@@ -21,6 +21,10 @@ def get_type(filename):
     return "dump"
 
 
+# Fields the collector adds when it ingests a crash report
+COLLECTOR_FIELDS = ["timestamp", "submitted_timestamp", "collector_notes", "payload"]
+
+
 def is_same(src_filename, dest_filename):
     file_type = get_type(src_filename)
 
@@ -35,7 +39,7 @@ def is_same(src_filename, dest_filename):
         dest_dict = json.loads(dest)
 
         # Remove any fields we want to ignore
-        for field in ["timestamp", "submitted_timestamp"]:
+        for field in COLLECTOR_FIELDS:
             if field in src_dict:
                 del src_dict[field]
             if field in dest_dict:

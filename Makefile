@@ -32,6 +32,7 @@ build: .container-test build-libs  ## | Build Docker images.
 
 .PHONY: clean
 clean:  ## | Remove build, test, and other artifacts.
+	${DC} rm --stop --force -v
 	-rm -rf build
 	-rm .container-*
 	-rm -rf fakedata_dest
@@ -48,8 +49,8 @@ lintfix: .container-test  ## | Reformat code.
 test: build  ## | Run tests.
 	${DC} run test py.test
 
-.PHONY: testshell  ## | Open shell in test container.
-testshell: build
+.PHONY: testshell
+testshell: build  ## | Open shell in test container.
 	${DC} run test bash
 
 .PHONY: runtimelist

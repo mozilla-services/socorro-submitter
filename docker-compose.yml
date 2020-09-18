@@ -47,7 +47,7 @@ services:
   # https://hub.docker.com/r/mozilla/antenna/
   # socorro collector collecting to a separate S3 bucket
   antenna:
-    image: mozilla/antenna:latest
+    image: mozilla/socorro_collector:latest
     env_file: docker/antenna.env
     depends_on:
       - localstack-s3
