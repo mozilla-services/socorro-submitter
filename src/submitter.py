@@ -17,6 +17,7 @@ import time
 
 import boto3
 from botocore.client import Config as Boto3Config
+import dockerflow  # noqa
 from google.cloud.logging.client import Client as CloudLoggingClient
 from google.cloud.logging.handlers import CloudLoggingHandler
 from google.cloud.logging.handlers.transports.sync import SyncTransport
@@ -72,6 +73,8 @@ class Config(object):
 
 CONFIG = Config()
 
+LOGGER_NAME = "submitter"
+
 
 def setup_logging(config):
     logging_config = {
@@ -82,7 +85,7 @@ def setup_logging(config):
         "formatters": {
             "mozlog": {
                 "()": "dockerflow.logging.JsonLogFormatter",
-                "logger_name": "socorrosubmitter",
+                "logger_name": LOGGER_NAME,
             }
         },
         "handlers": {
@@ -94,7 +97,7 @@ def setup_logging(config):
         },
         "root": {"handlers": ["console"], "level": "WARNING"},
         "loggers": {
-            "submitter": {"propagate": False, "handlers": ["console"], "level": "INFO"}
+            LOGGER_NAME: {"propagate": False, "handlers": ["console"], "level": "INFO"}
         },
     }
 
@@ -114,11 +117,11 @@ def setup_logging(config):
         )
         handler.setLevel(logging.DEBUG)
         logging.getLogger().addHandler(handler)
-        logging.getLogger("submitter").addHandler(handler)
+        logging.getLogger(LOGGER_NAME).addHandler(handler)
 
 
 setup_logging(CONFIG)
-LOGGER = logging.getLogger("submitter")
+LOGGER = logging.getLogger(LOGGER_NAME)
 
 
 def statsd_incr(key, value=1, tags=None):
