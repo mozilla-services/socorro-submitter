@@ -102,7 +102,7 @@ Scripts
 * ``bin/generate_event.py``: Generates a sample AWS S3 event.
 
 * ``bin/run_invoke.sh``: Invokes the submitter function in a AWS Lambda Python
-  3.6 runtime environment.
+  3.8 runtime environment.
 
 * ``bin/integration_test.sh``: Runs an integration test.
 
