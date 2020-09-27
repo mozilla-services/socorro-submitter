@@ -29,7 +29,7 @@ import six
 NOVALUE = object()
 
 
-class Config(object):
+class Config:
     def __init__(self):
         self.env_name = self.get_from_env("ENV_NAME", "")
         self.throttle = int(self.get_from_env("THROTTLE", "10"))
@@ -303,18 +303,31 @@ def multipart_encode(raw_crash, dumps):
     boundary = "01659896d5dc42cabd7f3d8a3dcdd3bb"
     output = io.BytesIO()
 
-    # Package up raw crash metadata--sort them so they're stable in the payload
-    for key, val in sorted(raw_crash.items()):
+    # If the payload of the original crash report had the crash annotations in
+    # the "extra" field as a JSON blob, we should do the same here
+    if raw_crash.get("payload", "") == "json":
         output.write(smart_bytes("--%s\r\n" % boundary))
-        output.write(
-            smart_bytes(
-                'Content-Disposition: form-data; name="%s"\r\n' % Header(key).encode()
+        output.write(b'Content-Disposition: form-data; name="extra"\r\n')
+        output.write(b"Content-Type: application/json\r\n")
+        output.write(b"\r\n")
+        extra_data = json.dumps(raw_crash, sort_keys=True, separators=(",", ":"))
+        output.write(smart_bytes(extra_data))
+        output.write(b"\r\n")
+
+    else:
+        # Package up raw crash metadata--sort them so they're stable in the payload
+        for key, val in sorted(raw_crash.items()):
+            output.write(smart_bytes("--%s\r\n" % boundary))
+            output.write(
+                smart_bytes(
+                    'Content-Disposition: form-data; name="%s"\r\n'
+                    % Header(key).encode()
+                )
             )
-        )
-        output.write(b"Content-Type: text/plain; charset=utf-8\r\n")
-        output.write(b"\r\n")
-        output.write(smart_bytes(val))
-        output.write(b"\r\n")
+            output.write(b"Content-Type: text/plain; charset=utf-8\r\n")
+            output.write(b"\r\n")
+            output.write(smart_bytes(val))
+            output.write(b"\r\n")
 
     # Insert dump data--sort them so they're stable in the payload
     for name, data in sorted(dumps.items()):
