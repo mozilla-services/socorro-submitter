@@ -31,10 +31,6 @@ jobs:
           command: make build-containers
 
       - run:
-          name: Build libs
-          command: make build-libs
-
-      - run:
           name: Run linting and tests
           command: |
             # Run linting and tests without volume mounting because that
