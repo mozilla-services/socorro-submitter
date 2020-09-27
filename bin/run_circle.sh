@@ -19,11 +19,11 @@ docker run \
     --rm \
     --workdir=/app \
     --env-file=docker/lambda.env \
-    socorrosubmitter_test bin/run_lint.sh
+    local/socorrosubmitter_test bin/run_lint.sh
 
 # Run test
 docker run \
     --rm \
     --workdir=/app \
     --env-file=docker/lambda.env \
-    socorrosubmitter_test pytest
+    local/socorrosubmitter_test pytest

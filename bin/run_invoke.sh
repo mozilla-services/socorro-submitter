@@ -4,11 +4,11 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-# Invokes the submitter lambda function in a python3.6 lambda runtime
-# environment. Pass an event in via stdin.
+# Invokes the submitter lambda function in a lambda runtime environment. Pass
+# an event in via stdin.
 #
-# This turns around and uses lambci/lambda:python3.6, so any of those
-# args will work, too.
+# This turns around and uses lambci/lambda:python3.8, so any of those args will
+# work, too.
 #
 # https://github.com/lambci/docker-lambda#example
 #

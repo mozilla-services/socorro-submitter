@@ -96,9 +96,7 @@ def setup_logging(config):
             }
         },
         "root": {"handlers": ["console"], "level": "WARNING"},
-        "loggers": {
-            LOGGER_NAME: {"propagate": False, "handlers": ["console"], "level": "INFO"}
-        },
+        "loggers": {LOGGER_NAME: {"handlers": ["console"], "level": "INFO"}},
     }
 
     logging.config.dictConfig(logging_config)
@@ -131,10 +129,15 @@ def statsd_incr(key, value=1, tags=None):
     else:
         tags = ""
 
-    print(
-        "MONITORING|%(timestamp)s|%(val)s|count|%(key)s|%(tags)s"
-        % {"timestamp": int(time.time()), "key": key, "val": value, "tags": tags}
-    )
+    # We pass the data in the message and in extra because mozlog will add
+    # extra fields to its JSON msg
+    msg = "MONITORING|%(timestamp)s|%(value)s|count|%(key)s|%(tags)s" % {
+        "timestamp": int(time.time()),
+        "key": key,
+        "value": value,
+        "tags": tags,
+    }
+    LOGGER.info(msg, extra={"key": key, "value": value, "tags": tags})
 
 
 CRASH_ID_RE = re.compile(

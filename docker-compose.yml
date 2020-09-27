@@ -8,6 +8,7 @@ services:
     build:
       context: .
       dockerfile: docker/test/Dockerfile
+    image: local/socorrosubmitter_test
     env_file: docker/lambda.env
     volumes:
       - .:/app
