@@ -47,7 +47,7 @@ lintfix: .container-test  ## | Reformat code.
 
 .PHONY: test
 test: build  ## | Run tests.
-	${DC} run test py.test
+	${DC} run test pytest -vv
 
 .PHONY: testshell
 testshell: build  ## | Open shell in test container.
