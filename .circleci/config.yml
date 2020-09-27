@@ -2,9 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      # base image for primary container
-      - image: circleci/python:3.6.1
-
+      - image: mozilla/cidockerbases:docker-latest
     working_directory: ~/socorrosubmitter
 
     steps:
@@ -34,8 +32,11 @@ jobs:
 
       - run:
           name: Build libs
-          command: bin/run_build.sh
+          command: make build-libs
 
       - run:
-          name: Run tests
-          command: bin/run_circle.sh
+          name: Run linting and tests
+          command: |
+            # Run linting and tests without volume mounting because that
+            # doesn't work in CircleCI
+            ./bin/run_circle.sh
