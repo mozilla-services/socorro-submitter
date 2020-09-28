@@ -108,6 +108,7 @@ Scripts
 
 * ``bin/run_circle.sh``: The script that Circle CI runs.
 
+* ``bin/release.py``: Used to do releases.
 
 Configuration
 =============
@@ -134,3 +135,19 @@ Then for local development, you need these:
 * ``SUBMITTER_S3_ENDPOINT_URL``: The endpoint url for the fake s3.
 
 If any of these are missing from the environment, Submitter will raise a ``KeyError``.
+
+
+Release process
+===============
+
+1. Create a submitter release bug::
+
+      $ ./bin/release.py make-bug
+
+2. Create a tag using the bug::
+
+      $ ./bin/release.py make-tag --with-bug=NNNNNNN
+
+   Note that this doesn't trigger a deploy--ops does that.
+
+3. Wait for ops to take the bug and deploy socorro-submitter
