@@ -24,7 +24,8 @@ jobs:
       - store_artifacts:
           path: version.json
 
-      - setup_remote_docker
+      - setup_remote_docker:
+          version: 19.03.13
 
       - run:
           name: Build images
