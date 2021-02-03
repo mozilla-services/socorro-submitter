@@ -23,7 +23,6 @@ from google.cloud.logging.handlers import CloudLoggingHandler
 from google.cloud.logging.handlers.transports.sync import SyncTransport
 from google.oauth2.service_account import Credentials
 import requests
-import six
 
 
 NOVALUE = object()
@@ -275,10 +274,10 @@ def fetch_dumps(client, bucket, crash_id):
 
 def smart_bytes(thing):
     """This converts things to a string representation then to bytes"""
-    if isinstance(thing, six.binary_type):
+    if isinstance(thing, bytes):
         return thing
 
-    if isinstance(thing, six.string_types):
+    if isinstance(thing, str):
         return thing.encode("utf-8")
 
     return repr(thing).encode("utf-8")

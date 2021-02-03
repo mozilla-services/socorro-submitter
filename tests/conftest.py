@@ -83,7 +83,7 @@ def client():
     return SubmitterClient()
 
 
-class FakeCollector(object):
+class FakeCollector:
     """Fakes a collector that the submitter submits to
 
     :attribute payloads: the list of payloads that was received since this was
@@ -119,7 +119,7 @@ def mock_collector():
         yield fm
 
 
-class FakeS3(object):
+class FakeS3:
     """Convenience class for manipulating S3 for test setup"""
 
     def jsonify(self, data):
