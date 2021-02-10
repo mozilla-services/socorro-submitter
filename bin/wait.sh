@@ -8,6 +8,8 @@
 #
 # Usage: wait.sh HOST PORT
 
+set -euo pipefail
+
 HOST="$1"
 PORT="$2"
 
@@ -23,8 +25,9 @@ do
         exit 1
     fi
 
-    nc -z ${HOST} ${PORT}
-    if [ $? -eq 0 ]
+    ERR=0
+    nc -v -z ${HOST} ${PORT} || ERR=1
+    if [ "${ERR}" == "0" ]
     then
         echo "Success: ${HOST}:${PORT} is listening!"
         break

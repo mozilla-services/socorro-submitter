@@ -10,11 +10,11 @@
 #
 # This should be called from inside a container.
 
-set -e
+set -euo pipefail
 
 BLACKARGS=("--line-length=88" "--target-version=py36" bin src tests)
 
-if [[ $1 == "--fix" ]]; then
+if [[ "${1:-}" == "--fix" ]]; then
     echo ">>> black fix"
     black "${BLACKARGS[@]}"
 

@@ -9,6 +9,8 @@
 #
 # Usage ./bin/aws_s3.sh [S3-CMDS]
 
+set -euo pipefail
+
 # Create required configuration files for aws
 if [[ ! -d /tmp/.aws ]]
 then
@@ -24,8 +26,8 @@ if [[ ! -f /tmp/.aws/credentials ]]
 then
     cat > /tmp/.aws/credentials <<EOF
 [default]
-aws_access_key_id = ${AWS_ACCESS_KEY_ID}
-aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
+aws_access_key_id = ${SUBMITTER_S3_ACCESS_KEY}
+aws_secret_access_key = ${SUBMITTER_S3_SECRET_ACCESS_KEY}
 EOF
 fi
 
