@@ -13,6 +13,8 @@
 #   SUBMITTER_BUILD_ID: the build id
 #   SUBMITTER_SOURCE: the source url
 
+set -euo pipefail
+
 SHA1="$(git rev-parse HEAD)"
 TAG="${SUBMITTER_TAG}"
 SOURCE="${SUBMITTER_SOURCE}"

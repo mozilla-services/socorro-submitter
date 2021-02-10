@@ -2,6 +2,17 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+# Include my.env and export it so variables set in there are available
+# in the Makefile.
+include my.env
+export
+
+# Set these in the environment to override them. This is helpful for
+# development if you have file ownership problems because the user
+# in the container doesn't match the user on your host.
+APP_UID ?= 10001
+APP_GID ?= 10001
+
 DC := $(shell which docker-compose)
 HOSTUSER := $(shell id -u):$(shell id -g)
 
@@ -20,7 +31,7 @@ help:
 
 .PHONY: build-containers
 build-containers:
-	${DC} build test
+	${DC} build --build-arg userid=${APP_UID} --build-arg groupid=${APP_GID} test
 	touch .container-test
 
 .PHONY: build-libs

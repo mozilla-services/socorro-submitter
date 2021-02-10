@@ -1,7 +1,12 @@
-FROM python:3.8@sha256:1a126607adde46a706e76357c910f36b9f5529fb575d4d86a639a4997daceba7
+FROM python:3.8@sha256:44a850f6b849f06c19e9634e540966ed5f9000094ab719737a6089164b512396
+
+# Set up user and group
+ARG groupid=10001
+ARG userid=10001
 
 WORKDIR /app/
-RUN groupadd --gid 1001 app && useradd -g app --uid 1001 --shell /usr/sbin/nologin app
+RUN groupadd --gid $groupid app && \
+    useradd -g app --uid $userid --shell /usr/sbin/nologin app
 
 RUN apt-get update && \
     apt-get install -y gcc apt-transport-https

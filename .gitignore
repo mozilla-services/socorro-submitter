@@ -2,3 +2,4 @@
 build/
 fakedata_dest/
 submitter.zip
+my.env

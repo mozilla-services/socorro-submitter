@@ -8,7 +8,15 @@
 # S3 bucket, invoking the submitter with an event, and then checking
 # the dest S3 bucket to see if the bits are there.
 
-set -e
+set -euo pipefail
+
+newtest() {
+    echo ""
+    echo "========================================================================"
+    echo ">>> $1"
+    echo "========================================================================"
+    echo ""
+}
 
 reportsuccess() {
     echo ""
@@ -22,7 +30,7 @@ reportfail() {
     echo ""
 }
 
-trap reportfail 0
+trap "reportfail ." 0
 
 HOSTUSER="$(id -u):$(id -g)"
 
@@ -41,11 +49,11 @@ echo ">>> SETUP"
 rm -rf "${DESTDIR}"
 mkdir "${DESTDIR}"
 
-# Start localstack-s3 and make sure buckets are clean
-docker-compose up -d localstack-s3
-# NOTE(willkg): This is localhost:5000 from the host and localstack-s3:5000
+# Start localstack and make sure buckets are clean
+docker-compose up -d localstack
+# NOTE(willkg): This is localhost:4566 from the host and localstack:4566
 # from inside the containers.
-./bin/wait.sh localhost 5000
+./bin/wait.sh localhost 4566
 
 # Set up integration test
 docker-compose run -u "${HOSTUSER}" test ./bin/setup_integration_test.sh
@@ -55,6 +63,10 @@ docker-compose up -d antenna
 # NOTE(willkg): This is localhost:8888 from the host and antenna:8888
 # from inside the containers.
 ./bin/wait.sh localhost 8888
+
+# Remove anything in the bucket that Antenna generated at startup so we have an
+# empty bucket to work with.
+docker-compose run -u "${HOSTUSER}" test ./bin/aws_s3.sh rm "${DESTBUCKET}" --recursive
 
 # Get a crash id from the fakecrashdata directory
 # CRASHID=$(find fakecrashdata/ -type f | grep raw_crash | awk -F / '{print $6}')
@@ -68,8 +80,9 @@ docker-compose run -u "${HOSTUSER}" test ./bin/aws_s3.sh sync "${SOURCEDIR}" "${
 echo ">>> GENERATE AN EVENT"
 EVENT=$(./bin/generate_event.py --bucket source_bucket --key "${CRASHKEY}")
 
-# Run invoke with THROTTLE=0 (submit nothing) and make sure it prints
-# "throttled"
+# ==============================================================================
+newtest "THROTTLE=0 (submit nothing) and make sure it prints 'throttled'"
+
 OUTPUT=$(echo "${EVENT}" | THROTTLE=0 ./bin/run_invoke.sh 2>&1) || true
 echo "${OUTPUT}"
 ISTHROTTLE=$(echo "${OUTPUT}" | grep "socorro.submitter.throttled") || true
@@ -79,17 +92,21 @@ then
     exit 1
 fi
 
-# Make sure nothing is in the dest bucket and thus nothing got submitted
+# Make sure nothing is in the dest bucket (except the test/ thing that antenna
+# posts at startup to test it can save to the bucket) and thus nothing got
+# submitted
 CONTENTS=$(docker-compose run --rm test ./bin/aws_s3.sh ls "${DESTBUCKET}")
 if [ "${CONTENTS}" != "" ]
 then
+    echo "Contents: ${CONTENTS}"
     reportfail "THROTTLE=0, but something is in the dest bucket."
     exit 1
 fi
 reportsuccess "THROTTLE=0 case submitted nothing!"
 
-# Run invoke with THROTTLE=100 (submit everything) and make sure it prints
-# "accept"
+# ==============================================================================
+newtest "THROTTLE=100 (submit everything) and make sure it prints 'accept'"
+
 OUTPUT=$(echo "${EVENT}" | THROTTLE=100 ./bin/run_invoke.sh 2>&1)
 echo "${OUTPUT}"
 ISACCEPT=$(echo "${OUTPUT}" | grep "socorro.submitter.accept") || true

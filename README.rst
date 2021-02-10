@@ -110,6 +110,9 @@ Scripts
 
 * ``bin/release.py``: Used to do releases.
 
+* ``bin/list_runtime_reqs.sh``: Updates requirements-runtime.txt file based on
+  what is installed in lambca/lambda:build-python3.8 image.
+
 Configuration
 =============
 

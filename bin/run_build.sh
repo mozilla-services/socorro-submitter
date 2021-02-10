@@ -9,7 +9,7 @@
 # Run this in the lambda-build container using "make build-libs".
 
 # Failures should cause setup to fail
-set -v -e -x
+set -euxo pipefail
 
 echo ">>> Building socorro-submitter..."
 

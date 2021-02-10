@@ -14,6 +14,8 @@
 #
 # Usage: EVENT | ./bin/run_invoke.sh
 
+set -euo pipefail
+
 # Pass throttle through as an environment variable and default to 10 which
 # matches the script default
 THROTTLE=${THROTTLE:-10}

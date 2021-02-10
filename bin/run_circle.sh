@@ -12,6 +12,8 @@
 #
 # Usage: ./bin/run_circle.sh
 
+set -euo pipefail
+
 docker network ls
 
 # Run lint
