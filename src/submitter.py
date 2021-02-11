@@ -6,6 +6,7 @@
 
 import contextlib
 from email.header import Header
+import gzip
 import io
 import json
 import logging
@@ -353,6 +354,16 @@ def multipart_encode(raw_crash, dumps):
         "Content-Type": "multipart/form-data; boundary=%s" % boundary,
         "Content-Length": str(len(output)),
     }
+
+    # Compress if it we need to
+    if raw_crash.get("payload_compressed", "") == "1":
+        bio = io.BytesIO()
+        g = gzip.GzipFile(fileobj=bio, mode="w")
+        g.write(output)
+        g.close()
+        output = bio.getbuffer()
+        headers["Content-Length"] = str(len(output))
+        headers["Content-Encoding"] = "gzip"
 
     return output, headers
 
