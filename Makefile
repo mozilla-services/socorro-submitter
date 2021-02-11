@@ -26,16 +26,23 @@ help:
 	    | sed -n 's/^\(.*\): \(.*\)##\(.*\)/\1\3/p' \
 	    | column -t  -s '|'
 
+my.env:
+	@if [ ! -f my.env ]; \
+		then \
+		echo "Copying my.env.dist to my.env..."; \
+		cp docker/my.env.dist my.env; \
+	fi
+
 .container-test:
 	make build-containers
 
 .PHONY: build-containers
-build-containers:
+build-containers: my.env
 	${DC} build --build-arg userid=${APP_UID} --build-arg groupid=${APP_GID} test
 	touch .container-test
 
 .PHONY: build-libs
-build-libs:
+build-libs: my.env
 	${DC} run -u "${HOSTUSER}" lambda-build bash -c "cd /tmp && /tmp/bin/run_build.sh"
 
 .PHONY: build
