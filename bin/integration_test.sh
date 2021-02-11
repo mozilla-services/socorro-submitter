@@ -92,9 +92,7 @@ then
     exit 1
 fi
 
-# Make sure nothing is in the dest bucket (except the test/ thing that antenna
-# posts at startup to test it can save to the bucket) and thus nothing got
-# submitted
+# Make sure nothing is in the dest bucket and thus nothing got submitted
 CONTENTS=$(docker-compose run --rm test ./bin/aws_s3.sh ls "${DESTBUCKET}")
 if [ "${CONTENTS}" != "" ]
 then
