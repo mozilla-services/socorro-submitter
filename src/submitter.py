@@ -19,9 +19,9 @@ import time
 import boto3
 from botocore.client import Config as Boto3Config
 import dockerflow  # noqa
-from google.cloud.logging.client import Client as CloudLoggingClient
-from google.cloud.logging.handlers import CloudLoggingHandler
-from google.cloud.logging.handlers.transports.sync import SyncTransport
+from google.cloud.logging_v2.client import Client as CloudLoggingClient
+from google.cloud.logging_v2.handlers import CloudLoggingHandler
+from google.cloud.logging_v2.handlers.transports.sync import SyncTransport
 from google.oauth2.service_account import Credentials
 import requests
 
