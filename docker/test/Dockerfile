@@ -17,7 +17,8 @@ COPY ./requirements-dev.txt /app/requirements-dev.txt
 
 # Install the Python dependencies that are in the Python Lambda runtime, then
 # the ones we need for socorro-submitter, then the ones needed for testing.
-RUN pip install --no-cache-dir -r requirements-runtime.txt && \
+RUN pip install -U pip && \
+    pip install --no-cache-dir -r requirements-runtime.txt && \
     pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir -r requirements-dev.txt
 
