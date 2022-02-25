@@ -1,15 +1,16 @@
+---
 version: 2
 jobs:
   build:
     docker:
-      - image: mozilla/cidockerbases:docker-latest
-    working_directory: ~/socorrosubmitter
+      - image: cimg/base:2022.02
 
     steps:
       - checkout
 
       - run:
           name: Create version.json
+          # yamllint disable rule:line-length
           command: |
             # create a version.json per
             # https://github.com/mozilla-services/Dockerflow/blob/master/docs/version_object.md
@@ -20,12 +21,14 @@ jobs:
             "$CIRCLE_PROJECT_USERNAME" \
             "$CIRCLE_PROJECT_REPONAME" \
             "$CIRCLE_BUILD_URL" > version.json
+          # yamllint enable rule:line-length
 
       - store_artifacts:
           path: version.json
 
       - setup_remote_docker:
           version: 19.03.13
+          docker_layer_caching: true
 
       - run:
           name: Build images
