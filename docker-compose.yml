@@ -17,8 +17,8 @@ services:
       - localstack
 
   lambda-run:
-    # https://hub.docker.com/r/lambci/lambda/
-    image: lambci/lambda:python3.8
+    # https://hub.docker.com/r/mlupin/docker-lambda/
+    image: mlupin/docker-lambda:python3.8
     env_file: docker/lambda.env
     volumes:
       - ./build:/var/task
@@ -27,15 +27,15 @@ services:
       - localstack
 
   lambda-build:
-    # https://hub.docker.com/r/lambci/lambda/
-    image: lambci/lambda:build-python3.8
+    # https://hub.docker.com/r/mlupin/docker-lambda/
+    image: mlupin/docker-lambda:python3.8-build
     volumes:
       - .:/tmp
 
   # https://hub.docker.com/r/localstack/localstack/
   # localstack running a fake S3
   localstack:
-    image: localstack/localstack:0.12.2
+    image: localstack/localstack:0.14.0
     environment:
       - SERVICES=s3
       - DEFAULT_REGION=us-east-1

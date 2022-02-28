@@ -21,8 +21,9 @@ Raw crash files have keys like this::
 The submitter will "roll a die" to decide whether to submit to a specified
 environment.
 
-If so, it'll pull all the raw crash data from S3, package it up, and HTTP POST
-it to the collector of the specified environment.
+If so, it'll pull all the raw crash data from S3, package it up into a valid
+crash report, and HTTP POST it to the collector of the specified destination
+environment.
 
 
 Quickstart
@@ -110,14 +111,19 @@ Scripts
 
 * ``bin/release.py``: Used to do releases.
 
-* ``bin/list_runtime_reqs.sh``: Updates requirements-runtime.txt file based on
-  what is installed in lambca/lambda:build-python3.8 image.
+* ``bin/list_runtime_reqs.sh``: Lists installed Python libraries in
+  mlupin/docker-lambda:python3.8-build image.
+
+  Use ``make rebuildreqs`` to run this.
+
+* ``bin/rebuild_reqs.sh``: Rebuilds the ``requirements.txt`` and ``requirements-dev.txt``
+  files from their source ``.in`` files.
+
+  Use ``make rebuildreqs`` to run this.
+
 
 Configuration
 =============
-
-All configuration for Submitter relates to the RabbitMQ service it needs to connect
-to.
 
 Required environment variables:
 
@@ -137,7 +143,28 @@ Then for local development, you need these:
   the bucket.
 * ``SUBMITTER_S3_ENDPOINT_URL``: The endpoint url for the fake s3.
 
-If any of these are missing from the environment, Submitter will raise a ``KeyError``.
+If any of these are missing from the environment, Submitter will raise a
+``KeyError``.
+
+
+Maintenance
+===========
+
+Updating requirements ``.txt`` files
+------------------------------------
+
+Update versions, add packages, remove packages in the ``.in`` files and then run::
+
+    make rebuildreqs
+
+To rebuild the ``.txt`` files.
+
+The one caveat to this is when you update ``pip-tools``. If it's changed the
+output, then you'll need to::
+
+    make rebuildreqs
+    make build
+    make rebuildreqs
 
 
 Release process
@@ -151,6 +178,6 @@ Release process
 
       $ ./bin/release.py make-tag --with-bug=NNNNNNN
 
-   Note that this doesn't trigger a deploy--ops does that.
+   Note that this doesn't trigger a deploy--SRE does that.
 
-3. Wait for ops to take the bug and deploy socorro-submitter
+3. Notify SRE about the bug and ask them to deploy socorro-submitter

@@ -71,6 +71,7 @@ test: build  ## | Run tests.
 testshell: build  ## | Open shell in test container.
 	${DC} run test bash
 
-.PHONY: runtimelist
-runtimelist: build  ## | List python packages in lambda runtime image
-	${DC} run --rm lambda-build bash -c "/tmp/bin/list_runtime_reqs.sh > /tmp/requirements-runtime.txt"
+.PHONY: rebuildreqs
+rebuildreqs: .container-test  ## | Update requirements*.txt files.
+	${DC} run --rm -u "${HOSTUSER}" lambda-build bash -c "/tmp/bin/list_runtime_reqs.sh > /tmp/requirements-runtime.txt"
+	${DC} run --rm --no-deps -u "${HOSTUSER}" test /app/bin/rebuild_reqs.sh

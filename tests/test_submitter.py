@@ -4,6 +4,7 @@
 
 import gzip
 import logging
+import random
 
 import pytest
 
@@ -248,9 +249,11 @@ def test_non_put_event_ignored(client, fakes3, mock_collector):
     assert len(mock_collector.payloads) == 0
 
 
-def test_throttle_accepted(client, caplog, mocker, fakes3, mock_collector):
-    always_20 = mocker.patch("random.randint")
-    always_20.return_value = 20
+def test_throttle_accepted(client, caplog, monkeypatch, fakes3, mock_collector):
+    def always_20(*args, **kwargs):
+        return 20
+
+    monkeypatch.setattr(random, "randint", always_20)
 
     fakes3.create_bucket()
     fakes3.save_crash(
@@ -276,9 +279,11 @@ def test_throttle_accepted(client, caplog, mocker, fakes3, mock_collector):
     assert "|1|count|socorro.submitter.accept|" in caplog.record_tuples[0][2]
 
 
-def test_throttle_skipped(client, caplog, mocker, fakes3, mock_collector):
-    always_20 = mocker.patch("random.randint")
-    always_20.return_value = 20
+def test_throttle_skipped(client, caplog, monkeypatch, fakes3, mock_collector):
+    def always_20(*args, **kwargs):
+        return 20
+
+    monkeypatch.setattr(random, "randint", always_20)
 
     fakes3.create_bucket()
     fakes3.save_crash(
