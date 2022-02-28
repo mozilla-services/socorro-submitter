@@ -112,7 +112,7 @@ class FakeCollector:
             yield self
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def mock_collector():
     """Creates a mock collector that lets you observe posted payloads"""
     with FakeCollector().setup_mock() as fm:
@@ -164,7 +164,7 @@ class FakeS3:
             self.upload_file(key, data)
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fakes3():
     """Sets up mock S3 and returns a convenience class"""
     # Mock out AWS S3

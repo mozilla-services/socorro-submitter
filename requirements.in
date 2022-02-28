@@ -1,0 +1,9 @@
+# Requirements for socorro-submitter AWS Lambda package
+#
+# Generates requirements.txt file.
+
+boto3==1.21.8
+dockerflow==2022.1.0
+google-auth==2.6.0
+google-cloud-logging==3.0.0
+requests==2.27.1

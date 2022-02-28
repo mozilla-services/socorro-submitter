@@ -69,9 +69,8 @@ docker-compose up -d antenna
 docker-compose run -u "${HOSTUSER}" test ./bin/aws_s3.sh rm "${DESTBUCKET}" --recursive
 
 # Get a crash id from the fakecrashdata directory
-# CRASHID=$(find fakecrashdata/ -type f | grep raw_crash | awk -F / '{print $6}')
-CRASHID="11107bd0-2d1c-4865-af09-80bc00180313"
-CRASHKEY="v2/raw_crash/111/20180313/${CRASHID}"
+CRASHID="11107bd0-2d1c-4865-af09-80bc00220228"
+CRASHKEY="v2/raw_crash/111/20220228/${CRASHID}"
 
 # Copy source crash data into S3 source bucket
 docker-compose run -u "${HOSTUSER}" test ./bin/aws_s3.sh sync "${SOURCEDIR}" "${SOURCEBUCKET}"
@@ -79,6 +78,9 @@ docker-compose run -u "${HOSTUSER}" test ./bin/aws_s3.sh sync "${SOURCEDIR}" "${
 # Generate am event
 echo ">>> GENERATE AN EVENT"
 EVENT=$(./bin/generate_event.py --bucket source_bucket --key "${CRASHKEY}")
+
+echo "Using event:"
+echo "${EVENT}"
 
 # ==============================================================================
 newtest "THROTTLE=0 (submit nothing) and make sure it prints 'throttled'"

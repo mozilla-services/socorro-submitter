@@ -7,10 +7,10 @@
 # Invokes the submitter lambda function in a lambda runtime environment. Pass
 # an event in via stdin.
 #
-# This turns around and uses lambci/lambda:python3.8, so any of those args will
-# work, too.
+# This turns around and uses mlupin/docker-lambda:python3.8, so any of those
+# args will work, too.
 #
-# https://github.com/lambci/docker-lambda#example
+# https://github.com/mLupine/docker-lambda#run-examples
 #
 # Usage: EVENT | ./bin/run_invoke.sh
 

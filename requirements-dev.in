@@ -1,0 +1,9 @@
+# Local dev environment requirements
+
+awscli==1.22.63
+black==22.1.0
+flake8==4.0.1
+moto==3.0.5
+pip-tools==6.5.1
+pytest==7.0.1
+requests-mock==1.9.3
