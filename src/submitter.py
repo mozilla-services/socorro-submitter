@@ -193,10 +193,6 @@ def extract_crash_id_from_record(record):
         return None
 
 
-def get_antenna_throttle_result(crash_id):
-    return crash_id[-7]
-
-
 def build_s3_client(access_key, secret_access_key, region_name=None, endpoint_url=None):
     session_kwargs = {}
     if access_key and secret_access_key:
@@ -273,6 +269,33 @@ def fetch_dumps(client, bucket, crash_id):
     return dumps
 
 
+COLLECTOR_KEYS = [
+    "collector_notes",
+    "dump_checksums",
+    "payload",
+    "payload_compressed",
+    "submitted_timestamp",
+]
+
+
+def remove_collector_keys(raw_crash):
+    """Given a raw crash, extracts keys added by the collector into a separate dict
+
+    :arg raw_crash: dict of annotations and collector-added data
+
+    :returns: raw_crash (annotations) and collector_data (collector-added data)
+
+    """
+    collector_data = {}
+
+    for key in COLLECTOR_KEYS:
+        if key in raw_crash:
+            collector_data[key] = raw_crash[key]
+            del raw_crash[key]
+
+    return raw_crash, collector_data
+
+
 def smart_bytes(thing):
     """This converts things to a string representation then to bytes"""
     if isinstance(thing, bytes):
@@ -284,7 +307,7 @@ def smart_bytes(thing):
     return repr(thing).encode("utf-8")
 
 
-def multipart_encode(raw_crash, dumps):
+def multipart_encode(raw_crash, dumps, collector_data):
     """Takes a raw_crash and list of (name, dump) and converts to a multipart/form-data
 
     This returns a tuple of two things:
@@ -292,8 +315,9 @@ def multipart_encode(raw_crash, dumps):
     1. a ``bytes`` object with the HTTP POST payload
     2. a dict of headers with ``Content-Type`` and ``Content-Length`` in it
 
-    :arg payload_dict: Python dict of name -> value pairs. Values must be either
-         strings or a tuple of (filename, file-like objects with ``.read()``).
+    :arg raw_crash: dict of crash annotations
+    :arg dumps: list of (name, dump) tuples
+    :arg collector_data: dict of data added by the collector
 
     :returns: tuple of (bytes, headers dict)
 
@@ -305,7 +329,7 @@ def multipart_encode(raw_crash, dumps):
 
     # If the payload of the original crash report had the crash annotations in
     # the "extra" field as a JSON blob, we should do the same here
-    if raw_crash.get("payload", "") == "json":
+    if collector_data.get("payload", "") == "json":
         output.write(smart_bytes("--%s\r\n" % boundary))
         output.write(b'Content-Disposition: form-data; name="extra"\r\n')
         output.write(b"Content-Type: application/json\r\n")
@@ -356,7 +380,7 @@ def multipart_encode(raw_crash, dumps):
     }
 
     # Compress if it we need to
-    if raw_crash.get("payload_compressed", "") == "1":
+    if collector_data.get("payload_compressed", "") == "1":
         bio = io.BytesIO()
         g = gzip.GzipFile(fileobj=bio, mode="w")
         g.write(output)
@@ -418,6 +442,9 @@ def handler(event, context):
             raw_crash = fetch_raw_crash(client, CONFIG.s3_bucket, crash_id)
             dumps = fetch_dumps(client, CONFIG.s3_bucket, crash_id)
 
+            # Remove keys created by the collector from the raw crash
+            raw_crash, collector_data = remove_collector_keys(raw_crash)
+
         except Exception:
             statsd_incr("socorro.submitter.unknown_s3fetch_error", value=1)
             LOGGER.exception("Error: s3 fetch failed for unknown reason: %s", crash_id)
@@ -425,7 +452,7 @@ def handler(event, context):
 
         try:
             # Assemble payload and headers
-            payload, headers = multipart_encode(raw_crash, dumps)
+            payload, headers = multipart_encode(raw_crash, dumps, collector_data)
 
             # POST crash to new environment
             requests.post(CONFIG.destination_url, headers=headers, data=payload)

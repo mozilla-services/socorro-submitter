@@ -94,8 +94,7 @@ def test_annotations_as_json(client, caplog, fakes3, mock_collector):
         'Content-Disposition: form-data; name="extra"\r\n'
         "Content-Type: application/json\r\n"
         "\r\n"
-        '{"Product":"Firefox","Version":"60.0","payload":"json",'
-        '"uuid":"de1bb258-cbbf-4589-a673-34f800160918"}\r\n'
+        '{"Product":"Firefox","Version":"60.0","uuid":"de1bb258-cbbf-4589-a673-34f800160918"}\r\n'
         "--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n"
         'Content-Disposition: form-data; name="upload_file_minidump"; filename="file.dump"\r\n'
         "Content-Type: application/octet-stream\r\n"
@@ -153,10 +152,6 @@ def test_compressed(client, caplog, fakes3, mock_collector):
         b'Content-Disposition: form-data; name="Version"\r\n'
         b"Content-Type: text/plain; charset=utf-8\r\n\r\n"
         b"60.0\r\n"
-        b"--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n"
-        b'Content-Disposition: form-data; name="payload_compressed"\r\n'
-        b"Content-Type: text/plain; charset=utf-8\r\n\r\n"
-        b"1\r\n"
         b"--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n"
         b'Content-Disposition: form-data; name="uuid"\r\n'
         b"Content-Type: text/plain; charset=utf-8\r\n\r\n"
