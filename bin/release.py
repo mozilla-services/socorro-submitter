@@ -13,7 +13,7 @@ both.
 This requires Python 3 to run.
 
 repo: https://github.com/willkg/socorro-release/
-sha: fcab65954515317449f1d34e36255b1f2df154c7
+sha: 522573cab99d7d7de2106853f3283d30bf88aaa9
 
 """
 
@@ -129,7 +129,7 @@ def get_remote_name(github_user):
 
 def make_tag(bug_number, remote_name, tag_name, commits_since_tag):
     """Tags a release."""
-    message = "Tagged %s\n\n%s" % (tag_name, "\n".join(commits_since_tag))
+    message = "\n".join(commits_since_tag)
 
     if bug_number:
         # Add bug number to tag
@@ -151,6 +151,20 @@ def make_tag(bug_number, remote_name, tag_name, commits_since_tag):
     input(f">>> Ready to push to remote {remote_name}? Ctrl-c to cancel")
     print(">>> Pushing...")
     subprocess.check_call(["git", "push", "--tags", remote_name, tag_name])
+
+    if bug_number:
+        # Show tag for adding to bug comment
+        print(f">>> Show tag... Copy and paste this into bug #{bug_number}.")
+        print(">>> %<-----------------------------------------------")
+        output = check_output(f"git show {tag_name}")
+        # Truncate the output at "diff --git"
+        output = output[: output.find("diff --git")].strip()
+        print(f"Tagged {tag_name}:")
+        print("")
+        print("```")
+        print(output)
+        print("```")
+        print(">>> %<-----------------------------------------------")
 
 
 def make_bug(
