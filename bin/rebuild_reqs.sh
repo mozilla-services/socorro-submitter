@@ -12,6 +12,9 @@
 
 set -euo pipefail
 
+pip --version
+pip-compile --version
+
 # Recompile requirements-dev.txt
 pip-compile --cache-dir=/tmp --generate-hashes --output-file /app/requirements-dev.txt /app/requirements-dev.in
 
