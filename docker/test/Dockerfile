@@ -1,4 +1,4 @@
-FROM python:3.8.12@sha256:7f39c108e0077de5b235cb7ace3f2b78c6c49a69d5651da40674e9b46d255bba
+FROM python:3.8.14@sha256:3693c8e04424d2155e8fcf932031727ec587f1182b7301bb0b88bb1593b2f144
 
 # Set up user and group
 ARG groupid=10001
@@ -17,9 +17,13 @@ COPY ./requirements-dev.txt /app/requirements-dev.txt
 
 # Install the Python dependencies that are in the Python Lambda runtime, then
 # the ones we need for socorro-submitter, then the ones needed for testing.
-RUN pip install -U pip && \
+RUN echo '>>> update pip...' && \
+    pip install -U pip && \
+    echo '>>> install requirements-runtime.txt...' && \
     pip install --no-cache-dir -r requirements-runtime.txt && \
+    echo '>>> install requirements.txt...' && \
     pip install --no-cache-dir -r requirements.txt && \
+    echo '>>> install requirements-dev.txt...' && \
     pip install --no-cache-dir -r requirements-dev.txt
 
 # Copy app repo
