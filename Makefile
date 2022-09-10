@@ -46,7 +46,7 @@ build-libs: my.env
 	${DC} run -u "${HOSTUSER}" lambda-build bash -c "cd /tmp && /tmp/bin/run_build.sh"
 
 .PHONY: build
-build: .container-test build-libs  ## | Build Docker images.
+build: build-containers build-libs  ## | Build Docker images.
 
 .PHONY: clean
 clean:  ## | Remove build, test, and other artifacts.
