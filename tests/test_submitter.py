@@ -334,7 +334,7 @@ def test_env_tag_added_to_statds_incr(client, caplog, fakes3, mock_collector):
     [
         # Raw crash file
         (
-            "v2/raw_crash/de1/20160918/de1bb258-cbbf-4589-a673-34f800160918",
+            "v1/raw_crash/20160918/de1bb258-cbbf-4589-a673-34f800160918",
             "de1bb258-cbbf-4589-a673-34f800160918",
         ),
         # Other files that get saved in the same bucket

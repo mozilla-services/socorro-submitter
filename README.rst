@@ -15,7 +15,7 @@ Details
 
 Raw crash files have keys like this::
 
-  v2/raw_crash/000/20170413/00007bd0-2d1c-4865-af09-80bc00170413
+  v1/raw_crash/20170413/00007bd0-2d1c-4865-af09-80bc00170413
 
 
 The submitter will "roll a die" to decide whether to submit to a specified
@@ -77,7 +77,7 @@ Quickstart
 
    .. code-block:: shell
 
-      $ ./bin/generate_event.py --key v2/raw_crash/000/20170413/00007bd0-2d1c-4865-af09-80bc00170413 > event.json
+      $ ./bin/generate_event.py --key v1/raw_crash/20170413/00007bd0-2d1c-4865-af09-80bc00170413 > event.json
       $ cat event.json | ./bin/run_invoke.sh
       <invoke output>
 

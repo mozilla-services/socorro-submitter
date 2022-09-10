@@ -69,8 +69,8 @@ docker-compose up -d antenna
 docker-compose run -u "${HOSTUSER}" test ./bin/aws_s3.sh rm "${DESTBUCKET}" --recursive
 
 # Get a crash id from the fakecrashdata directory
-CRASHID="11107bd0-2d1c-4865-af09-80bc00220228"
-CRASHKEY="v2/raw_crash/111/20220228/${CRASHID}"
+CRASHID="11107bd0-2d1c-4865-af09-80bc00220909"
+CRASHKEY="v1/raw_crash/20220909/${CRASHID}"
 
 # Copy source crash data into S3 source bucket
 docker-compose run -u "${HOSTUSER}" test ./bin/aws_s3.sh sync "${SOURCEDIR}" "${SOURCEBUCKET}"
@@ -107,7 +107,7 @@ reportsuccess "THROTTLE=0 case submitted nothing!"
 # ==============================================================================
 newtest "THROTTLE=100 (submit everything) and make sure it prints 'accept'"
 
-OUTPUT=$(echo "${EVENT}" | THROTTLE=100 ./bin/run_invoke.sh 2>&1)
+OUTPUT=$(echo "${EVENT}" | THROTTLE=100 ./bin/run_invoke.sh 2>&1) || true
 echo "${OUTPUT}"
 ISACCEPT=$(echo "${OUTPUT}" | grep "socorro.submitter.accept") || true
 if [ -z "${ISTHROTTLE}" ]
