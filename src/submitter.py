@@ -178,7 +178,7 @@ def extract_crash_id_from_record(record):
     try:
         key = record["s3"]["object"]["key"]
         LOGGER.debug("looking at key: %s", key)
-        if not key.startswith("v2/raw_crash/"):
+        if not key.startswith("v1/raw_crash/"):
             LOGGER.debug("%s: not a raw crash--ignoring", repr(key))
             return None
         crash_id = key.rsplit("/", 3)[-1]
@@ -238,7 +238,7 @@ def generate_s3_key(kind, crash_id):
 
     """
     if kind == "raw_crash":
-        return "v2/raw_crash/%s/20%s/%s" % (crash_id[0:3], crash_id[-6:], crash_id)
+        return "v1/raw_crash/20%s/%s" % (crash_id[-6:], crash_id)
     if kind == "dump_names":
         return "v1/dump_names/%s" % crash_id
     if kind in (None, "", "upload_file_minidump"):
