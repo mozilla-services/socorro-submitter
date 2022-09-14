@@ -269,31 +269,31 @@ def fetch_dumps(client, bucket, crash_id):
     return dumps
 
 
-COLLECTOR_KEYS = [
-    "collector_notes",
-    "dump_checksums",
-    "payload",
-    "payload_compressed",
+COLLECTOR_KEYS_TO_REMOVE = [
+    "collector_notes",  # version 1
+    "dump_checksums",  # version 1
+    "metadata",  # version 2
+    "MinidumpSha256Hash",  # version 1
+    "payload_compressed",  # version 1
+    "payload",  # version 1
     "submitted_timestamp",
+    "version",  # version 2
 ]
 
 
 def remove_collector_keys(raw_crash):
-    """Given a raw crash, extracts keys added by the collector into a separate dict
+    """Given a raw crash, removes keys added by a collector
 
     :arg raw_crash: dict of annotations and collector-added data
 
-    :returns: raw_crash (annotations) and collector_data (collector-added data)
+    :returns: raw_crash
 
     """
-    collector_data = {}
-
-    for key in COLLECTOR_KEYS:
+    for key in COLLECTOR_KEYS_TO_REMOVE:
         if key in raw_crash:
-            collector_data[key] = raw_crash[key]
             del raw_crash[key]
 
-    return raw_crash, collector_data
+    return raw_crash
 
 
 def smart_bytes(thing):
@@ -307,7 +307,7 @@ def smart_bytes(thing):
     return repr(thing).encode("utf-8")
 
 
-def multipart_encode(raw_crash, dumps, collector_data):
+def multipart_encode(raw_crash, dumps, payload_type, payload_compressed):
     """Takes a raw_crash and list of (name, dump) and converts to a multipart/form-data
 
     This returns a tuple of two things:
@@ -317,7 +317,8 @@ def multipart_encode(raw_crash, dumps, collector_data):
 
     :arg raw_crash: dict of crash annotations
     :arg dumps: list of (name, dump) tuples
-    :arg collector_data: dict of data added by the collector
+    :arg payload_type: either "multipart" or "json"
+    :arg payload_compressed: either "1" or "0"
 
     :returns: tuple of (bytes, headers dict)
 
@@ -329,7 +330,7 @@ def multipart_encode(raw_crash, dumps, collector_data):
 
     # If the payload of the original crash report had the crash annotations in
     # the "extra" field as a JSON blob, we should do the same here
-    if collector_data.get("payload", "") == "json":
+    if payload_type == "json":
         output.write(smart_bytes("--%s\r\n" % boundary))
         output.write(b'Content-Disposition: form-data; name="extra"\r\n')
         output.write(b"Content-Type: application/json\r\n")
@@ -380,7 +381,7 @@ def multipart_encode(raw_crash, dumps, collector_data):
     }
 
     # Compress if it we need to
-    if collector_data.get("payload_compressed", "") == "1":
+    if payload_compressed == "1":
         bio = io.BytesIO()
         g = gzip.GzipFile(fileobj=bio, mode="w")
         g.write(output)
@@ -390,6 +391,30 @@ def multipart_encode(raw_crash, dumps, collector_data):
         headers["Content-Encoding"] = "gzip"
 
     return output, headers
+
+
+def get_payload_type(raw_crash):
+    # version 1 location
+    if raw_crash.get("payload") is not None:
+        return raw_crash["payload"]
+
+    # version 2 location
+    if raw_crash.get("metadata", {}).get("payload") is not None:
+        return raw_crash["metadata"]["payload"]
+
+    return "unknown"
+
+
+def get_payload_compressed(raw_crash):
+    # version 1 location
+    if raw_crash.get("payload_compressed") is not None:
+        return raw_crash["payload_compressed"]
+
+    # version 2 location
+    if raw_crash.get("metadata", {}).get("payload_compressed") is not None:
+        return raw_crash["metadata"]["payload_compressed"]
+
+    return "0"
 
 
 def handler(event, context):
@@ -442,8 +467,11 @@ def handler(event, context):
             raw_crash = fetch_raw_crash(client, CONFIG.s3_bucket, crash_id)
             dumps = fetch_dumps(client, CONFIG.s3_bucket, crash_id)
 
+            payload_type = get_payload_type(raw_crash)
+            payload_compressed = get_payload_compressed(raw_crash)
+
             # Remove keys created by the collector from the raw crash
-            raw_crash, collector_data = remove_collector_keys(raw_crash)
+            raw_crash = remove_collector_keys(raw_crash)
 
         except Exception:
             statsd_incr("socorro.submitter.unknown_s3fetch_error", value=1)
@@ -452,7 +480,12 @@ def handler(event, context):
 
         try:
             # Assemble payload and headers
-            payload, headers = multipart_encode(raw_crash, dumps, collector_data)
+            payload, headers = multipart_encode(
+                raw_crash=raw_crash,
+                dumps=dumps,
+                payload_type=payload_type,
+                payload_compressed=payload_compressed,
+            )
 
             # POST crash to new environment
             requests.post(CONFIG.destination_url, headers=headers, data=payload)
