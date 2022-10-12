@@ -4,13 +4,13 @@
 #
 #    pip-compile --generate-hashes --output-file=/app/requirements.txt /app/requirements.in
 #
-boto3==1.24.70 \
-    --hash=sha256:abac9c7e54212ee68c2a311812a498ece2c43f98d1302f099128a9fe45cf37c5 \
-    --hash=sha256:bb69ebe7c484305568b1aaed664db3d09716dc93235e41f23538f99ea4f3addc
+boto3==1.24.89 \
+    --hash=sha256:346f8f0d101a4261dac146a959df18d024feda6431e1d9d84f94efd24d086cae \
+    --hash=sha256:d0d8ffcdc10821c4562bc7f935cdd840033bbc342ac0e14b6bdd348b3adf4c04
     # via -r /app/requirements.in
-botocore==1.27.70 \
-    --hash=sha256:2ad5be6ca322a549f858d245237358ed300f7347096caacbb29c013e10663d34 \
-    --hash=sha256:c0a014b4dfd7ffe739393034aa6e70e73f3a1b22c7667a59858259b341bf5082
+botocore==1.27.89 \
+    --hash=sha256:238f1dfdb8d8d017c2aea082609a3764f3161d32745900f41bcdcf290d95a048 \
+    --hash=sha256:621f5413be8f97712b7e36c1b075a8791d1d1b9971a7ee060cdcdf5e2debf6c1
     # via
     #   boto3
     #   s3transfer
@@ -37,9 +37,9 @@ google-api-core[grpc]==2.10.0 \
     #   google-cloud-appengine-logging
     #   google-cloud-core
     #   google-cloud-logging
-google-auth==2.11.0 \
-    --hash=sha256:be62acaae38d0049c21ca90f27a23847245c9f161ff54ede13af2cb6afecbac9 \
-    --hash=sha256:ed65ecf9f681832298e29328e1ef0a3676e3732b2e56f41532d45f70a22de0fb
+google-auth==2.12.0 \
+    --hash=sha256:98f601773978c969e1769f97265e732a81a8e598da3263895023958d456ee625 \
+    --hash=sha256:f12d86502ce0f2c0174e2e70ecc8d36c69593817e67e1d9c5e34489120422e4b
     # via
     #   -r /app/requirements.in
     #   google-api-core
@@ -56,9 +56,9 @@ google-cloud-core==2.3.2 \
     --hash=sha256:8417acf6466be2fa85123441696c4badda48db314c607cf1e5d543fa8bdc22fe \
     --hash=sha256:b9529ee7047fd8d4bf4a2182de619154240df17fbe60ead399078c1ae152af9a
     # via google-cloud-logging
-google-cloud-logging==3.2.2 \
-    --hash=sha256:1870ac9dae719b5344f31d523005930bd8fc8031e8686c55b6764912a0108bbf \
-    --hash=sha256:719121491cc349ee3f84600f3c2916b5bb95d6860b94d90d34f8f63d979d1220
+google-cloud-logging==3.2.5 \
+    --hash=sha256:bc6c185f47b272a72015cd7dc3c8e5d06a6959d68c6ae9e04e7dbf5815126ed1 \
+    --hash=sha256:c1b078003f8fc2c0864af04651e2be1213e5b738ea83291e5ff5652529bc5e58
     # via -r /app/requirements.in
 googleapis-common-protos[grpc]==1.56.4 \
     --hash=sha256:8eb2cbc91b69feaf23e32452a7ae60e791e09967d81d4fcc7fc388182d1bd394 \
@@ -144,21 +144,21 @@ proto-plus==1.22.1 \
     # via
     #   google-cloud-appengine-logging
     #   google-cloud-logging
-protobuf==4.21.5 \
-    --hash=sha256:011c0f267e85f5d73750b6c25f0155d5db1e9443cd3590ab669a6221dd8fcdb0 \
-    --hash=sha256:3ec6f5b37935406bb9df9b277e79f8ed81d697146e07ef2ba8a5a272fb24b2c9 \
-    --hash=sha256:5310cbe761e87f0c1decce019d23f2101521d4dfff46034f8a12a53546036ec7 \
-    --hash=sha256:5e0b272217aad8971763960238c1a1e6a65d50ef7824e23300da97569a251c55 \
-    --hash=sha256:5e0ce02418ef03d7657a420ae8fd6fec4995ac713a3cb09164e95f694dbcf085 \
-    --hash=sha256:5eb0724615e90075f1d763983e708e1cef08e66b1891d8b8b6c33bc3b2f1a02b \
-    --hash=sha256:7b6f22463e2d1053d03058b7b4ceca6e4ed4c14f8c286c32824df751137bf8e7 \
-    --hash=sha256:a7faa62b183d6a928e3daffd06af843b4287d16ef6e40f331575ecd236a7974d \
-    --hash=sha256:b04484d6f42f48c57dd2737a72692f4c6987529cdd148fb5b8e5f616862a2e37 \
-    --hash=sha256:b52e7a522911a40445a5f588bd5b5e584291bfc5545e09b7060685e4b2ff814f \
-    --hash=sha256:bf711b451212dc5b0fa45ae7dada07d8e71a4b0ff0bc8e4783ee145f47ac4f82 \
-    --hash=sha256:e5c5a2886ae48d22a9d32fbb9b6636a089af3cd26b706750258ce1ca96cc0116 \
-    --hash=sha256:eb1106e87e095628e96884a877a51cdb90087106ee693925ec0a300468a9be3a \
-    --hash=sha256:ee04f5823ed98bb9a8c3b1dc503c49515e0172650875c3f76e225b223793a1f2
+protobuf==4.21.7 \
+    --hash=sha256:3ec85328a35a16463c6f419dbce3c0fc42b3e904d966f17f48bae39597c7a543 \
+    --hash=sha256:58b81358ec6c0b5d50df761460ae2db58405c063fd415e1101209221a0a810e1 \
+    --hash=sha256:71d9dba03ed3432c878a801e2ea51e034b0ea01cf3a4344fb60166cb5f6c8757 \
+    --hash=sha256:8066322588d4b499869bf9f665ebe448e793036b552f68c585a9b28f1e393f66 \
+    --hash=sha256:8e09d1916386eca1ef1353767b6efcebc0a6859ed7f73cb7fb974feba3184830 \
+    --hash=sha256:9643684232b6b340b5e63bb69c9b4904cdd39e4303d498d1a92abddc7e895b7f \
+    --hash=sha256:9e355f2a839d9930d83971b9f562395e13493f0e9211520f8913bd11efa53c02 \
+    --hash=sha256:a74d96cd960b87b4b712797c741bb3ea3a913f5c2dc4b6cbe9c0f8360b75297d \
+    --hash=sha256:b019c79e23a80735cc8a71b95f76a49a262f579d6b84fd20a0b82279f40e2cc1 \
+    --hash=sha256:c7cb105d69a87416bd9023e64324e1c089593e6dae64d2536f06bcbe49cd97d8 \
+    --hash=sha256:ca200645d6235ce0df3ccfdff1567acbab35c4db222a97357806e015f85b5744 \
+    --hash=sha256:d3f89ccf7182293feba2de2739c8bf34fed1ed7c65a5cf987be00311acac57c1 \
+    --hash=sha256:db9056b6a11cb5131036d734bcbf91ef3ef9235d6b681b2fc431cbfe5a7f2e56 \
+    --hash=sha256:f370c0a71712f8965023dd5b13277444d3cdfecc96b2c778b0e19acbfd60df6e
     # via
     #   google-api-core
     #   google-cloud-appengine-logging
