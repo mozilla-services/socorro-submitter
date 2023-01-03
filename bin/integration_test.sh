@@ -50,30 +50,30 @@ rm -rf "${DESTDIR}"
 mkdir "${DESTDIR}"
 
 # Start localstack and make sure buckets are clean
-docker-compose up -d localstack
+docker compose up -d localstack
 # NOTE(willkg): This is localhost:4566 from the host and localstack:4566
 # from inside the containers.
 ./bin/wait.sh localhost 4566
 
 # Set up integration test
-docker-compose run -u "${HOSTUSER}" test ./bin/setup_integration_test.sh
+docker compose run -u "${HOSTUSER}" test ./bin/setup_integration_test.sh
 
 # Start antenna
-docker-compose up -d antenna
+docker compose up -d antenna
 # NOTE(willkg): This is localhost:8888 from the host and antenna:8888
 # from inside the containers.
 ./bin/wait.sh localhost 8888
 
 # Remove anything in the bucket that Antenna generated at startup so we have an
 # empty bucket to work with.
-docker-compose run -u "${HOSTUSER}" test ./bin/aws_s3.sh rm "${DESTBUCKET}" --recursive
+docker compose run -u "${HOSTUSER}" test ./bin/aws_s3.sh rm "${DESTBUCKET}" --recursive
 
 # Get a crash id from the fakecrashdata directory
 CRASHID="11107bd0-2d1c-4865-af09-80bc00220909"
 CRASHKEY="v1/raw_crash/20220909/${CRASHID}"
 
 # Copy source crash data into S3 source bucket
-docker-compose run -u "${HOSTUSER}" test ./bin/aws_s3.sh sync "${SOURCEDIR}" "${SOURCEBUCKET}"
+docker compose run -u "${HOSTUSER}" test ./bin/aws_s3.sh sync "${SOURCEDIR}" "${SOURCEBUCKET}"
 
 # Generate am event
 echo ">>> GENERATE AN EVENT"
@@ -95,7 +95,7 @@ then
 fi
 
 # Make sure nothing is in the dest bucket and thus nothing got submitted
-CONTENTS=$(docker-compose run --rm test ./bin/aws_s3.sh ls "${DESTBUCKET}")
+CONTENTS=$(docker compose run --rm test ./bin/aws_s3.sh ls "${DESTBUCKET}")
 if [ "${CONTENTS}" != "" ]
 then
     echo "Contents: ${CONTENTS}"
@@ -117,7 +117,7 @@ then
 fi
 
 # Copy S3 dest bucket into dest directory
-docker-compose run -u "${HOSTUSER}" --rm test ./bin/aws_s3.sh sync "${DESTBUCKET}" "${DESTDIR}"
+docker compose run -u "${HOSTUSER}" --rm test ./bin/aws_s3.sh sync "${DESTBUCKET}" "${DESTDIR}"
 
 # Make sure the crash is in the dest bucket and has the correct contents
 FILES=$(cd ${SOURCEDIR} && find . -type f)

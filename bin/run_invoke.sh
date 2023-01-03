@@ -21,7 +21,7 @@ set -euo pipefail
 THROTTLE=${THROTTLE:-10}
 
 # Note: Need to set DOCKER_LAMBDA_USE_STDIN to pipe events from stdin
-docker-compose run \
+docker compose run \
                --rm \
                -v "$PWD/build":/var/task \
                --service-ports \

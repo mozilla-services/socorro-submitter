@@ -13,8 +13,10 @@ export
 APP_UID ?= 10001
 APP_GID ?= 10001
 
-DC := $(shell which docker-compose)
 HOSTUSER := $(shell id -u):$(shell id -g)
+
+DOCKER := $(shell which docker)
+DC=${DOCKER} compose
 
 .DEFAULT_GOAL := help
 .PHONY: help
@@ -38,7 +40,8 @@ my.env:
 
 .PHONY: build-containers
 build-containers: my.env
-	${DC} build --build-arg userid=${APP_UID} --build-arg groupid=${APP_GID} test
+	${DC} build --build-arg userid=${APP_UID} --build-arg groupid=${APP_GID} --progress plain test
+	${DC} build --progress plain localstack
 	touch .container-test
 
 .PHONY: build-libs
