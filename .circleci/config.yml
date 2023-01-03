@@ -3,7 +3,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: cimg/base:2022.02
+      - image: cimg/base:2023.01
 
     steps:
       - checkout
@@ -27,7 +27,7 @@ jobs:
           path: version.json
 
       - setup_remote_docker:
-          version: 20.10.11
+          version: 20.10.18
           docker_layer_caching: true
 
       - run:
