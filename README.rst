@@ -29,11 +29,8 @@ environment.
 Quickstart
 ==========
 
-1. `Install docker 18.00.0+ <https://docs.docker.com/install/>`_ and
-   `install docker-compose 1.20.0+ <https://docs.docker.com/compose/install/>`_
-   on your machine.
-
-   You'll also need git, make, and bash.
+1. `Install Docker <https://docs.docker.com/install/>`_. You'll also need git,
+   make, and bash.
 
 2. Clone the repo:
 

@@ -8,7 +8,7 @@
 # Circle CI.
 #
 # Note: Circle CI's Docker can't mount volumes, so we have to run docker
-# rather than docker-compose to get around that.
+# rather than docker compose to get around that.
 #
 # Usage: ./bin/run_circle.sh
 
