@@ -7,5 +7,5 @@ dockerflow==2022.8.0
 google-auth==2.15.0
 google-api-core[grpc]==2.11.0
 google-cloud-logging==3.4.0
-googleapis-common-protos[grpc]==1.57.0
+googleapis-common-protos[grpc]==1.59.0
 requests==2.28.1
