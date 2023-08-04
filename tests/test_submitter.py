@@ -21,7 +21,6 @@ from submitter import (
     "raw_crash, expected",
     [
         ({}, "unknown"),
-        ({"payload": "json"}, "json"),
         ({"metadata": {"payload": "json"}}, "json"),
     ],
 )
@@ -33,7 +32,6 @@ def test_get_payload_type(raw_crash, expected):
     "raw_crash, expected",
     [
         ({}, "0"),
-        ({"payload_compressed": "1"}, "1"),
         ({"metadata": {"payload_compressed": "1"}}, "1"),
     ],
 )
@@ -45,25 +43,6 @@ def test_get_payload_compressed(raw_crash, expected):
     "raw_crash, expected",
     [
         ({}, {}),
-        # Version 1
-        (
-            {
-                "Product": "Firefox",
-                "Version": "60.0",
-                "collector_notes": [],
-                "dump_checksums": {},
-                "payload_compressed": "0",
-                "payload": "multipart",
-                "uuid": "de1bb258-cbbf-4589-a673-34f800160918",
-                "submitted_timestamp": "2022-09-14T15:45:55.222222",
-            },
-            {
-                "Product": "Firefox",
-                "Version": "60.0",
-                "uuid": "de1bb258-cbbf-4589-a673-34f800160918",
-            },
-        ),
-        # Version 2
         (
             {
                 "Product": "Firefox",
@@ -156,49 +135,6 @@ def test_annotations_as_json(client, caplog, fakes3, mock_collector):
             "uuid": "de1bb258-cbbf-4589-a673-34f800160918",
             "Product": "Firefox",
             "Version": "60.0",
-            "payload": "json",
-        },
-        dumps={"upload_file_minidump": "abcdef"},
-    )
-
-    crash_id = "de1bb258-cbbf-4589-a673-34f800160918"
-    events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
-
-    # Capture logs, make sure it doesn't get throttled, and invoke the Lambda
-    # function
-    with caplog.at_level(logging.INFO):
-        with CONFIG.override(throttle=100):
-            assert client.run(events) is None
-
-    # Verify payload was submitted
-    assert len(mock_collector.payloads) == 1
-    post_payload = mock_collector.payloads[0].text
-
-    # Who doesn't like reading raw multipart/form-data? Woo hoo!
-    assert (
-        post_payload == "--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n"
-        'Content-Disposition: form-data; name="extra"\r\n'
-        "Content-Type: application/json\r\n"
-        "\r\n"
-        '{"Product":"Firefox","Version":"60.0","uuid":"de1bb258-cbbf-4589-a673-34f800160918"}\r\n'
-        "--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n"
-        'Content-Disposition: form-data; name="upload_file_minidump"; filename="file.dump"\r\n'
-        "Content-Type: application/octet-stream\r\n"
-        "\r\n"
-        "abcdef\r\n"
-        "--01659896d5dc42cabd7f3d8a3dcdd3bb--\r\n"
-    )
-
-    assert "|1|count|socorro.submitter.accept|#env:test" in caplog.record_tuples[0][2]
-
-
-def test_version_2_annotations_as_json(client, caplog, fakes3, mock_collector):
-    fakes3.create_bucket()
-    fakes3.save_crash(
-        raw_crash={
-            "uuid": "de1bb258-cbbf-4589-a673-34f800160918",
-            "Product": "Firefox",
-            "Version": "60.0",
             "metadata": {
                 "payload": "json",
             },
@@ -236,65 +172,6 @@ def test_version_2_annotations_as_json(client, caplog, fakes3, mock_collector):
     )
 
     assert "|1|count|socorro.submitter.accept|#env:test" in caplog.record_tuples[0][2]
-
-
-def test_compressed(client, caplog, fakes3, mock_collector):
-    fakes3.create_bucket()
-    fakes3.save_crash(
-        raw_crash={
-            "uuid": "de1bb258-cbbf-4589-a673-34f800160918",
-            "Product": "Firefox",
-            "Version": "60.0",
-            "payload_compressed": "1",
-        },
-        dumps={"upload_file_minidump": "abcdef"},
-    )
-
-    crash_id = "de1bb258-cbbf-4589-a673-34f800160918"
-    events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
-
-    # Capture logs, make sure it doesn't get throttled, and invoke the Lambda
-    # function
-    with caplog.at_level(logging.INFO):
-        with CONFIG.override(throttle=100):
-            assert client.run(events) is None
-
-    # Verify payload was submitted
-    assert len(mock_collector.payloads) == 1
-    req = mock_collector.payloads[0]
-    print(repr(req))
-
-    # Assert the header
-    assert req.headers["Content-Encoding"] == "gzip"
-
-    # Assert it was accepted
-    assert "|1|count|socorro.submitter.accept|#env:test" in caplog.record_tuples[0][2]
-
-    # Assert the length and payload are correct and payload is compressed
-    post_payload = req.body
-    assert len(post_payload) == int(req.headers["Content-Length"])
-
-    unzipped_payload = gzip.decompress(post_payload)
-    assert (
-        unzipped_payload == b"--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n"
-        b'Content-Disposition: form-data; name="Product"\r\n'
-        b"Content-Type: text/plain; charset=utf-8\r\n\r\n"
-        b"Firefox\r\n"
-        b"--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n"
-        b'Content-Disposition: form-data; name="Version"\r\n'
-        b"Content-Type: text/plain; charset=utf-8\r\n\r\n"
-        b"60.0\r\n"
-        b"--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n"
-        b'Content-Disposition: form-data; name="uuid"\r\n'
-        b"Content-Type: text/plain; charset=utf-8\r\n\r\n"
-        b"de1bb258-cbbf-4589-a673-34f800160918\r\n"
-        b"--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n"
-        b'Content-Disposition: form-data; name="upload_file_minidump"; '
-        b'filename="file.dump"\r\n'
-        b"Content-Type: application/octet-stream\r\n\r\n"
-        b"abcdef\r\n"
-        b"--01659896d5dc42cabd7f3d8a3dcdd3bb--\r\n"
-    )
 
 
 def test_multiple_dumps(client, caplog, fakes3, mock_collector):
@@ -358,7 +235,7 @@ def test_multiple_dumps(client, caplog, fakes3, mock_collector):
     assert "|1|count|socorro.submitter.accept|" in caplog.record_tuples[0][2]
 
 
-def test_version_2_compressed(client, caplog, fakes3, mock_collector):
+def test_compressed(client, caplog, fakes3, mock_collector):
     fakes3.create_bucket()
     fakes3.save_crash(
         raw_crash={
