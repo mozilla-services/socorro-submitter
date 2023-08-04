@@ -26,6 +26,11 @@ RUN echo '>>> update pip...' && \
     echo '>>> install requirements-dev.txt...' && \
     pip install --no-cache-dir -r requirements-dev.txt
 
+# RUN echo '>>> update pip...' && \
+#     pip install -U pip && \
+#     echo '>>> install pip-tools...' && \
+#     pip install pip-tools
+
 # Copy app repo
 COPY . /app/
 
