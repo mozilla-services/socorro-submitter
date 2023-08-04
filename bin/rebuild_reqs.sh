@@ -6,7 +6,7 @@
 
 # Rebuilds the requirements*.txt files.
 
-# Usage: ./bin/update_reqs.sh
+# Usage: ./bin/rebuild_reqs.sh
 
 # This should be run in the test container.
 
