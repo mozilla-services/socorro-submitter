@@ -270,14 +270,9 @@ def fetch_dumps(client, bucket, crash_id):
 
 
 COLLECTOR_KEYS_TO_REMOVE = [
-    "collector_notes",  # version 1
-    "dump_checksums",  # version 1
-    "metadata",  # version 2
-    "MinidumpSha256Hash",  # version 1
-    "payload_compressed",  # version 1
-    "payload",  # version 1
+    "metadata",
     "submitted_timestamp",
-    "version",  # version 2
+    "version",
 ]
 
 
@@ -394,11 +389,6 @@ def multipart_encode(raw_crash, dumps, payload_type, payload_compressed):
 
 
 def get_payload_type(raw_crash):
-    # version 1 location
-    if raw_crash.get("payload") is not None:
-        return raw_crash["payload"]
-
-    # version 2 location
     if raw_crash.get("metadata", {}).get("payload") is not None:
         return raw_crash["metadata"]["payload"]
 
@@ -406,11 +396,6 @@ def get_payload_type(raw_crash):
 
 
 def get_payload_compressed(raw_crash):
-    # version 1 location
-    if raw_crash.get("payload_compressed") is not None:
-        return raw_crash["payload_compressed"]
-
-    # version 2 location
     if raw_crash.get("metadata", {}).get("payload_compressed") is not None:
         return raw_crash["metadata"]["payload_compressed"]
 
