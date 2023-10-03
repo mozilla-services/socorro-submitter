@@ -13,6 +13,7 @@
 set -euo pipefail
 
 BLACKARGS=("--line-length=88" "--target-version=py36" bin src tests)
+PYTHON_VERSION=$(python --version)
 
 if [[ "${1:-}" == "--fix" ]]; then
     echo ">>> black fix"
@@ -21,10 +22,20 @@ if [[ "${1:-}" == "--fix" ]]; then
 else
     cd /app
 
-    echo ">>> flake8 ($(python --version))"
+    echo ">>> flake8 (${PYTHON_VERSION})"
     flake8
 
-    echo ">>> black"
+    echo ">>> black (${PYTHON_VERSION})"
     black --check "${BLACKARGS[@]}"
-fi
 
+    echo ">>> license check (${PYTHON_VERSION})"
+    if [[ -d ".git" ]]; then
+        # If the .git directory exists, we can let license-check.py do
+        # git ls-files.
+        python bin/license-check.py
+    else
+        # The .git directory doesn't exist, so run it on all the Python
+        # files in the tree.
+        python bin/license-check.py .
+    fi
+fi
