@@ -4,14 +4,15 @@
 #
 #    pip-compile --generate-hashes --output-file=/app/requirements.txt --strip-extras /app/requirements.in
 #
-boto3==1.28.58 \
-    --hash=sha256:2f18d2dac5d9229e8485b556eb58b7b95fca91bbf002f63bf9c39209f513f6e6 \
-    --hash=sha256:71dcd596a82b5341c6941117b9228897bfb1e2b58f73e60e1fdda1b02a847cc8
+boto3==1.28.68 \
+    --hash=sha256:0da96244df4771a8ee70b742c42759a440fdb9c8b7850584db7c5daf10e824e1 \
+    --hash=sha256:cbc76ed54278be8cdc44ce6ee1980296f764fdff72c6bbe668169c07d4ca08f0
     # via -r /app/requirements.in
-botocore==1.31.58 \
-    --hash=sha256:002f8bdca8efde50ae7267f342bc1d03a71d76024ce3949e4ffdd1151581c53e \
-    --hash=sha256:83a3ca4d9247fdbde76c654137e6ab648bd976f652ce2354def1715c838af505
+botocore==1.31.68 \
+    --hash=sha256:0813f02d00e46051364d9b5d5e697a90e988b336b87e949888c1444a59b8ba59 \
+    --hash=sha256:7b7065c502f5faa6cc2aa4b42b5fa34e5c0cd171e2952d6a9aeb26bfd44a54c3
     # via
+    #   -r /app/requirements.in
     #   boto3
     #   s3transfer
 cachetools==5.3.1 \
@@ -108,12 +109,13 @@ google-api-core==2.12.0 \
     --hash=sha256:ec6054f7d64ad13b41e43d96f735acbd763b0f3b695dabaa2d579673f6a6e160
     # via
     #   -r /app/requirements.in
+    #   google-api-core
     #   google-cloud-appengine-logging
     #   google-cloud-core
     #   google-cloud-logging
-google-auth==2.23.2 \
-    --hash=sha256:5a9af4be520ba33651471a0264eead312521566f44631cbb621164bc30c8fd40 \
-    --hash=sha256:c2e253347579d483004f17c3bd0bf92e611ef6c7ba24d41c5c59f2e7aeeaf088
+google-auth==2.23.3 \
+    --hash=sha256:6864247895eea5d13b9c57c9e03abb49cb94ce2dc7c58e91cba3248c7477c9e3 \
+    --hash=sha256:a8f4608e65c244ead9e0538f181a96c6e11199ec114d41f1d7b1bffa96937bda
     # via
     #   -r /app/requirements.in
     #   google-api-core
@@ -130,17 +132,18 @@ google-cloud-core==2.3.3 \
     --hash=sha256:37b80273c8d7eee1ae816b3a20ae43585ea50506cb0e60f3cf5be5f87f1373cb \
     --hash=sha256:fbd11cad3e98a7e5b0343dc07cb1039a5ffd7a5bb96e1f1e27cee4bda4a90863
     # via google-cloud-logging
-google-cloud-logging==3.7.0 \
-    --hash=sha256:76300709fddd123acf7179dbb91556c56d0fc55804861252a5dfadc7bf2d0759 \
-    --hash=sha256:d2eae8503f0f6f9484846df8b087a9539cd8d32a35f67f50053cfdb02b98961e
+google-cloud-logging==3.8.0 \
+    --hash=sha256:c868b276b021cf5f32b6e8356b6cb3666357d149ad0fd798076043a5ec7ed988 \
+    --hash=sha256:fdd916e59a84aa8c02e8148d7fdd3b3b623c57b0c1ff71f43297ce8e50fc1eab
     # via -r /app/requirements.in
-googleapis-common-protos==1.60.0 \
-    --hash=sha256:69f9bbcc6acde92cab2db95ce30a70bd2b81d20b12eff3f1aabaffcbe8a93918 \
-    --hash=sha256:e73ebb404098db405ba95d1e1ae0aa91c3e15a71da031a2eeb6b2e23e7bc3708
+googleapis-common-protos==1.61.0 \
+    --hash=sha256:22f1915393bb3245343f6efe87f6fe868532efc12aa26b391b15132e1279f1c0 \
+    --hash=sha256:8a64866a97f6304a7179873a465d6eee97b7a24ec6cfd78e0f575e96b821240b
     # via
     #   -r /app/requirements.in
     #   google-api-core
     #   google-cloud-audit-log
+    #   googleapis-common-protos
     #   grpc-google-iam-v1
     #   grpcio-status
 grpc-google-iam-v1==0.12.6 \
