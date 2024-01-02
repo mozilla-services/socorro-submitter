@@ -58,13 +58,13 @@ clean:  ## | Remove build, test, and other artifacts.
 	-rm .container-*
 	-rm -rf fakedata_dest
 
+.PHONY: format
+format: .container-test  ## | Format code.
+	${DC} run -u "${HOSTUSER}" test ruff format
+
 .PHONY: lint
 lint: .container-test  ## | Lint code.
 	${DC} run test bin/run_lint.sh
-
-.PHONY: lintfix
-lintfix: .container-test  ## | Reformat code.
-	${DC} run -u "${HOSTUSER}" test bin/run_lint.sh --fix
 
 .PHONY: test
 test: build  ## | Run tests.

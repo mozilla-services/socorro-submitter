@@ -12,23 +12,14 @@
 
 set -euo pipefail
 
-BLACKARGS=("--line-length=88" "--target-version=py36" bin src tests)
 PYTHON_VERSION=$(python --version)
 
-if [[ "${1:-}" == "--fix" ]]; then
-    echo ">>> black fix"
-    black "${BLACKARGS[@]}"
+cd /app
 
-else
-    cd /app
+echo ">>> ruff (${PYTHON_VERSION})"
+ruff format --check bin src tests
+ruff check bin src tests
 
-    echo ">>> flake8 (${PYTHON_VERSION})"
-    flake8
-
-    echo ">>> black (${PYTHON_VERSION})"
-    black --check "${BLACKARGS[@]}"
-
-    echo ">>> license check (${PYTHON_VERSION})"
-    python bin/license-check.py bin
-    python bin/license-check.py src
-fi
+echo ">>> license check (${PYTHON_VERSION})"
+python bin/license-check.py bin
+python bin/license-check.py src
