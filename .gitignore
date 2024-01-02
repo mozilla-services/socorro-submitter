@@ -3,3 +3,4 @@ build/
 fakedata_dest/
 submitter.zip
 my.env
+.python-version
