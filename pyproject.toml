@@ -24,7 +24,7 @@ github_project = "socorro-submitter"
 bugzilla_product = "Socorro"
 bugzilla_component = "Infra"
 main_branch = "main"
-tag_name_template = "%%Y.%%m.%%d"
+tag_name_template = "%Y.%m.%d"
 
 
 [tool.paul-mclendahand]
