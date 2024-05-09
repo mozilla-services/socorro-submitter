@@ -99,9 +99,13 @@ def test_basic(client, caplog, fakes3, mock_collector):
     # Verify payload was submitted
     assert len(mock_collector.payloads) == 1
     assert mock_collector.payloads[0].hostname == "antenna"
-    post_payload = mock_collector.payloads[0].text
+
+    # Verify default user agent was used
+    headers = mock_collector.payloads[0].headers
+    assert headers["User-Agent"] == "socorro-submitter/1.0"
 
     # Stare at some multipart/form-data
+    post_payload = mock_collector.payloads[0].text
     assert (
         post_payload == "--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n"
         'Content-Disposition: form-data; name="Product"\r\n'
@@ -525,6 +529,43 @@ def test_different_throttles(client, caplog, monkeypatch, fakes3, mock_collector
     # Verify only second destination got a payload
     assert len(mock_collector.payloads) == 1
     assert mock_collector.payloads[0].hostname == "antenna_2"
+
+
+def test_user_agent(client, caplog, fakes3, mock_collector):
+    user_agent = "crash-reporter/1.0"
+
+    fakes3.create_bucket()
+    fakes3.save_crash(
+        raw_crash={
+            "Product": "Firefox",
+            "uuid": "de1bb258-cbbf-4589-a673-34f800160918",
+            "Version": "60.0",
+            "metadata": {
+                "collector_notes": [],
+                "dump_checksums": {},
+                "payload_compressed": "0",
+                "payload": "multipart",
+                "user_agent": user_agent,
+            },
+            "version": 2,
+        },
+        dumps={"upload_file_minidump": "abcdef"},
+    )
+
+    crash_id = "de1bb258-cbbf-4589-a673-34f800160918"
+    events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
+
+    # Capture logs and invoke lambda function
+    with caplog.at_level(logging.INFO):
+        with CONFIG.override(destinations="http://antenna:8000/submit|100"):
+            assert client.run(events) is None
+
+    # Verify payload was submitted
+    assert len(mock_collector.payloads) == 1
+
+    # Verify user agent is from raw crash
+    headers = mock_collector.payloads[0].headers
+    assert headers["User-Agent"] == user_agent
 
 
 def test_env_tag_added_to_statds_incr(client, caplog, fakes3, mock_collector):
