@@ -4,6 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+from collections import namedtuple
 import contextlib
 from email.header import Header
 import gzip
@@ -29,11 +30,15 @@ import requests
 NOVALUE = object()
 
 
+Destination = namedtuple("Destination", ["url", "throttle"])
+
+
 class Config:
     def __init__(self):
         self.env_name = self.get_from_env("ENV_NAME", "")
-        self.throttle = int(self.get_from_env("THROTTLE", "10"))
-        self.destination_url = self.get_from_env("DESTINATION_URL")
+        self.throttle = int(self.get_from_env("THROTTLE", "10"))  # deprecated
+        self.destination_url = self.get_from_env("DESTINATION_URL", "")  # deprecated
+        self.destinations = self.get_from_env("DESTINATIONS", "")
         self.s3_bucket = self.get_from_env("S3_BUCKET")
         self.s3_region_name = self.get_from_env("S3_REGION_NAME")
 
@@ -69,6 +74,19 @@ class Config:
 
         for key, val in old_values.items():
             setattr(self, key, val)
+
+    def get_destinations(self):
+        """Returns a list of Destination instances based on configuration"""
+        destinations = []
+        if self.destinations:
+            for destination in self.destinations.split(","):
+                url, throttle = destination.split("|")
+                destinations.append(Destination(url=url, throttle=int(throttle)))
+        else:
+            destinations = [
+                Destination(url=self.destination_url, throttle=self.throttle)
+            ]
+        return destinations
 
 
 CONFIG = Config()
@@ -403,7 +421,7 @@ def get_payload_compressed(raw_crash):
 
 
 def handler(event, context):
-    accepted_records = []
+    crash_ids = []
 
     LOGGER.debug("number of records: %d", len(event["Records"]))
     for record in event["Records"]:
@@ -423,23 +441,36 @@ def handler(event, context):
             continue
 
         LOGGER.debug("saw crash id: %s in %s", crash_id, bucket)
-
-        # Throttle crashes
-        if CONFIG.throttle < 100 and random.randint(0, 100) > CONFIG.throttle:
-            LOGGER.info("submitted: %s", crash_id)
-            statsd_incr("socorro.submitter.throttled", value=1)
-            continue
-
-        accepted_records.append(crash_id)
+        crash_ids.append(crash_id)
 
     # If we don't have anything to post, we're done!
-    if not accepted_records:
+    if not crash_ids:
         return
 
-    for crash_id in accepted_records:
-        try:
-            statsd_incr("socorro.submitter.accept", value=1)
+    destinations = CONFIG.get_destinations()
 
+    for crash_id in crash_ids:
+        submit_destinations = []
+
+        # Figure out which destinations we're sending to
+        for destination in destinations:
+            if (
+                destination.throttle < 100
+                and random.randint(0, 100) > destination.throttle
+            ):
+                LOGGER.info("throttled: %s (%r)", crash_id, destination)
+                statsd_incr("socorro.submitter.throttled", value=1)
+                continue
+
+            statsd_incr("socorro.submitter.accept", value=1)
+            submit_destinations.append(destination)
+
+        # If there's nowhere to send to, move on to next crash_id
+        if not submit_destinations:
+            continue
+
+        # Fetch the crash report data
+        try:
             # Build client
             client = build_s3_client(
                 access_key=CONFIG.s3_access_key,
@@ -463,19 +494,23 @@ def handler(event, context):
             LOGGER.exception("Error: s3 fetch failed for unknown reason: %s", crash_id)
             raise
 
-        try:
-            # Assemble payload and headers
-            payload, headers = multipart_encode(
-                raw_crash=raw_crash,
-                dumps=dumps,
-                payload_type=payload_type,
-                payload_compressed=payload_compressed,
-            )
+        # Assemble payload and headers
+        payload, headers = multipart_encode(
+            raw_crash=raw_crash,
+            dumps=dumps,
+            payload_type=payload_type,
+            payload_compressed=payload_compressed,
+        )
 
-            # POST crash to new environment
-            requests.post(CONFIG.destination_url, headers=headers, data=payload)
+        # Post to all destinations
+        for destination in submit_destinations:
+            try:
+                # POST crash to new environment
+                requests.post(destination.url, headers=headers, data=payload)
 
-        except Exception:
-            statsd_incr("socorro.submitter.unknown_httppost_error", value=1)
-            LOGGER.exception("Error: http post failed for unknown reason: %s", crash_id)
-            raise
+            except Exception:
+                statsd_incr("socorro.submitter.unknown_httppost_error", value=1)
+                LOGGER.exception(
+                    "Error: http post failed for unknown reason: %s", crash_id
+                )
+                raise

@@ -126,10 +126,17 @@ Required environment variables:
 
 * ``SUBMITTER_ENV_NAME``: The environment name. This is for tagging metrics with
   the environment.
-* ``SUBMITTER_THROTTLE``: The percent of crashes to submit; 0 is none, 100 is
-  all.
-* ``SUBMITTER_DESTINATION_URL``: The full url of the collector to post crashes
-  to.
+* ``SUBMITTER_THROTTLE``: (Deprecated) The percent of crashes to submit; 0 is
+  none, 100 is all.
+* ``SUBMITTER_DESTINATION_URL``: (Deprecated) The full url of the collector to
+  post crashes to.
+* ``SUBMITTER_DESTINATIONS``: List of ``destination|throttle`` pairs separated
+  by commas. Examples::
+
+      https://example.com|20
+      https://example.com|30,https://example.com|100
+
+  Replaces ``SUBMITTER_THROTTLE`` and ``SUBMITTER_DESTINATION_URL``.
 * ``SUBMITTER_S3_BUCKET``: The s3 bucket to pull crash data from.
 * ``SUBMITTER_S3_REGION_NAME``: The AWS region to use.
 
