@@ -33,6 +33,9 @@ NOVALUE = object()
 Destination = namedtuple("Destination", ["url", "throttle"])
 
 
+DEFAULT_USER_AGENT = "socorro-submitter/1.0"
+
+
 class Config:
     def __init__(self):
         self.env_name = self.get_from_env("ENV_NAME", "")
@@ -486,6 +489,11 @@ def handler(event, context):
             payload_type = get_payload_type(raw_crash)
             payload_compressed = get_payload_compressed(raw_crash)
 
+            # Get the metadata.user_agent if there is one, or use default agent
+            user_agent = (
+                raw_crash.get("metadata", {}).get("user_agent") or DEFAULT_USER_AGENT
+            )
+
             # Remove keys created by the collector from the raw crash
             raw_crash = remove_collector_keys(raw_crash)
 
@@ -501,6 +509,9 @@ def handler(event, context):
             payload_type=payload_type,
             payload_compressed=payload_compressed,
         )
+
+        # Set the User-Agent header so the collector captures this in the metadata
+        headers["User-Agent"] = user_agent
 
         # Post to all destinations
         for destination in submit_destinations:
