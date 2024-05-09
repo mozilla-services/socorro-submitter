@@ -447,6 +447,14 @@ def handler(event, context):
     if not crash_ids:
         return
 
+    # Build s3 client
+    client = build_s3_client(
+        access_key=CONFIG.s3_access_key,
+        secret_access_key=CONFIG.s3_secret_access_key,
+        region_name=CONFIG.s3_region_name,
+        endpoint_url=CONFIG.s3_endpoint_url,
+    )
+
     destinations = CONFIG.get_destinations()
 
     for crash_id in crash_ids:
@@ -471,14 +479,6 @@ def handler(event, context):
 
         # Fetch the crash report data
         try:
-            # Build client
-            client = build_s3_client(
-                access_key=CONFIG.s3_access_key,
-                secret_access_key=CONFIG.s3_secret_access_key,
-                region_name=CONFIG.s3_region_name,
-                endpoint_url=CONFIG.s3_endpoint_url,
-            )
-
             # Fetch raw crash data from S3
             raw_crash = fetch_raw_crash(client, CONFIG.s3_bucket, crash_id)
             dumps = fetch_dumps(client, CONFIG.s3_bucket, crash_id)
