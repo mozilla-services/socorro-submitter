@@ -90,17 +90,124 @@ def test_basic(client, caplog, fakes3, mock_collector):
     crash_id = "de1bb258-cbbf-4589-a673-34f800160918"
     events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
 
-    # Capture logs, make sure it doesn't get throttled, and invoke the Lambda
-    # function
+    # Capture logs, make sure it doesn't get throttled by setting throttle to 100, and
+    # invoke the Lambda function
     with caplog.at_level(logging.INFO):
-        with CONFIG.override(throttle=100):
+        with CONFIG.override(destinations="http://antenna:8000/submit|100"):
+            assert client.run(events) is None
+
+    # Verify payload was submitted
+    assert len(mock_collector.payloads) == 1
+    assert mock_collector.payloads[0].hostname == "antenna"
+    post_payload = mock_collector.payloads[0].text
+
+    # Stare at some multipart/form-data
+    assert (
+        post_payload == "--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n"
+        'Content-Disposition: form-data; name="Product"\r\n'
+        "Content-Type: text/plain; charset=utf-8\r\n"
+        "\r\n"
+        "Firefox\r\n"
+        "--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n"
+        'Content-Disposition: form-data; name="Version"\r\n'
+        "Content-Type: text/plain; charset=utf-8\r\n"
+        "\r\n"
+        "60.0\r\n"
+        "--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n"
+        'Content-Disposition: form-data; name="uuid"\r\n'
+        "Content-Type: text/plain; charset=utf-8\r\n"
+        "\r\n"
+        "de1bb258-cbbf-4589-a673-34f800160918\r\n"
+        "--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n"
+        'Content-Disposition: form-data; name="upload_file_minidump"; filename="file.dump"\r\n'
+        "Content-Type: application/octet-stream\r\n"
+        "\r\n"
+        "abcdef\r\n"
+        "--01659896d5dc42cabd7f3d8a3dcdd3bb--\r\n"
+    )
+
+    assert "|1|count|socorro.submitter.accept|#env:test" in caplog.record_tuples[0][2]
+
+
+def test_multiple_destinations(client, caplog, fakes3, mock_collector):
+    fakes3.create_bucket()
+    fakes3.save_crash(
+        raw_crash={
+            "Product": "Firefox",
+            "uuid": "de1bb258-cbbf-4589-a673-34f800160918",
+            "Version": "60.0",
+            "metadata": {
+                "collector_notes": [],
+                "dump_checksums": {},
+                "payload_compressed": "0",
+                "payload": "multipart",
+            },
+            "version": 2,
+        },
+        dumps={"upload_file_minidump": "abcdef"},
+    )
+
+    crash_id = "de1bb258-cbbf-4589-a673-34f800160918"
+    events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
+
+    # Capture logs, configure to send to two destinations with throttle set to 100, and
+    # invoke the Lambda function
+    with caplog.at_level(logging.INFO):
+        with CONFIG.override(
+            # NOTE(willkg):antenna and antenna_2 are set up in the collector mock.
+            destinations="http://antenna:8000/submit|100,http://antenna_2:8000/submit|100",
+        ):
+            assert client.run(events) is None
+
+    # Verify payload was submitted
+    #
+    # We only have one collector mock, but we can distinguish between the destinations
+    # by looking at the payload request hostname
+    assert len(mock_collector.payloads) == 2
+    assert mock_collector.payloads[0].hostname == "antenna"
+    assert mock_collector.payloads[1].hostname == "antenna_2"
+
+    # The payloads sent to antenna and antenna_2 should be the same
+    assert mock_collector.payloads[0].text == mock_collector.payloads[1].text
+
+
+def test_basic_deprecated(client, caplog, fakes3, mock_collector):
+    """Test with deprecated THROTTLE and DESTINATION_URL values"""
+    fakes3.create_bucket()
+    fakes3.save_crash(
+        raw_crash={
+            "Product": "Firefox",
+            "uuid": "de1bb258-cbbf-4589-a673-34f800160918",
+            "Version": "60.0",
+            "metadata": {
+                "collector_notes": [],
+                "dump_checksums": {},
+                "payload_compressed": "0",
+                "payload": "multipart",
+            },
+            "version": 2,
+        },
+        dumps={"upload_file_minidump": "abcdef"},
+    )
+
+    crash_id = "de1bb258-cbbf-4589-a673-34f800160918"
+    events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
+
+    # Capture logs, set deprecated DESTINATION_URL and THROTTLE and unset DESTINATIONS,
+    # and invoke the Lambda function
+    with caplog.at_level(logging.INFO):
+        with CONFIG.override(
+            destination_url="http://antenna:8000/submit",
+            throttle=100,
+            destinations="",
+        ):
             assert client.run(events) is None
 
     # Verify payload was submitted
     assert len(mock_collector.payloads) == 1
     post_payload = mock_collector.payloads[0].text
 
-    # Who doesn't like reading raw multipart/form-data? Woo hoo!
+    # Assert the payload is correct
     assert (
         post_payload == "--01659896d5dc42cabd7f3d8a3dcdd3bb\r\n"
         'Content-Disposition: form-data; name="Product"\r\n'
@@ -149,7 +256,7 @@ def test_annotations_as_json(client, caplog, fakes3, mock_collector):
     # Capture logs, make sure it doesn't get throttled, and invoke the Lambda
     # function
     with caplog.at_level(logging.INFO):
-        with CONFIG.override(throttle=100):
+        with CONFIG.override(destinations="http://antenna:8000/submit|100"):
             assert client.run(events) is None
 
     # Verify payload was submitted
@@ -194,7 +301,7 @@ def test_multiple_dumps(client, caplog, fakes3, mock_collector):
     # Capture logs, make sure it doesn't get throttled, and invoke the Lambda
     # function
     with caplog.at_level(logging.INFO):
-        with CONFIG.override(throttle=100):
+        with CONFIG.override(destinations="http://antenna:8000/submit|100"):
             assert client.run(events) is None
 
     # Verify payload was submitted
@@ -256,13 +363,12 @@ def test_compressed(client, caplog, fakes3, mock_collector):
     # Capture logs, make sure it doesn't get throttled, and invoke the Lambda
     # function
     with caplog.at_level(logging.INFO):
-        with CONFIG.override(throttle=100):
+        with CONFIG.override(destinations="http://antenna:8000/submit|100"):
             assert client.run(events) is None
 
     # Verify payload was submitted
     assert len(mock_collector.payloads) == 1
     req = mock_collector.payloads[0]
-    print(repr(req))
 
     # Assert the header
     assert req.headers["Content-Encoding"] == "gzip"
@@ -337,7 +443,7 @@ def test_throttle_accepted(client, caplog, monkeypatch, fakes3, mock_collector):
     # Capture the log and set throttle value above the mocked randint--this should
     # get submitted
     with caplog.at_level(logging.INFO):
-        with CONFIG.override(throttle=30):
+        with CONFIG.override(destinations="http://antenna:8000/submit|30"):
             assert client.run(events) is None
 
     # Verify payload was submitted
@@ -367,13 +473,58 @@ def test_throttle_skipped(client, caplog, monkeypatch, fakes3, mock_collector):
     # Capture the logs and set throttle value below the mocked randint--this
     # should get skipped
     with caplog.at_level(logging.INFO):
-        with CONFIG.override(throttle=10):
+        with CONFIG.override(destinations="http://antenna:8000/submit|10"):
             assert client.run(events) is None
 
     # Verify no payload was submitted
     assert len(mock_collector.payloads) == 0
 
     assert "|1|count|socorro.submitter.throttled|" in caplog.record_tuples[1][2]
+
+
+def test_different_throttles(client, caplog, monkeypatch, fakes3, mock_collector):
+    def always_20(*args, **kwargs):
+        return 20
+
+    monkeypatch.setattr(random, "randint", always_20)
+
+    fakes3.create_bucket()
+    fakes3.save_crash(
+        raw_crash={
+            "Product": "Firefox",
+            "uuid": "de1bb258-cbbf-4589-a673-34f800160918",
+            "Version": "60.0",
+            "metadata": {
+                "collector_notes": [],
+                "dump_checksums": {},
+                "payload_compressed": "0",
+                "payload": "multipart",
+            },
+            "version": 2,
+        },
+        dumps={"upload_file_minidump": "abcdef"},
+    )
+
+    crash_id = "de1bb258-cbbf-4589-a673-34f800160918"
+    events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
+
+    # Capture logs and invoke lambda function
+    with caplog.at_level(logging.INFO):
+        with CONFIG.override(
+            destinations=",".join(
+                [
+                    # Throttled at 5--will get throttled
+                    "http://antenna:8000/submit|5",
+                    # Throttled at 30--will get accepted
+                    "http://antenna_2:8000/submit|30",
+                ]
+            )
+        ):
+            assert client.run(events) is None
+
+    # Verify only second destination got a payload
+    assert len(mock_collector.payloads) == 1
+    assert mock_collector.payloads[0].hostname == "antenna_2"
 
 
 def test_env_tag_added_to_statds_incr(client, caplog, fakes3, mock_collector):
@@ -388,9 +539,11 @@ def test_env_tag_added_to_statds_incr(client, caplog, fakes3, mock_collector):
     )
 
     with caplog.at_level(logging.INFO):
-        with CONFIG.override(env_name="stage", throttle=100):
+        with CONFIG.override(
+            env_name="stage",
+            destinations="http://antenna:8000/submit|100",
+        ):
             crash_id = "de1bb258-cbbf-4589-a673-34f800160918"
-            #                                        ^ accept
             events = client.build_crash_save_events(client.crash_id_to_key(crash_id))
             assert client.run(events) is None
 

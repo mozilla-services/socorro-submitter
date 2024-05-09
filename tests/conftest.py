@@ -109,6 +109,7 @@ class FakeCollector:
     def setup_mock(self):
         with requests_mock.mock() as rm:
             rm.post("//antenna:8000/submit", text=self.handle_post)
+            rm.post("//antenna_2:8000/submit", text=self.handle_post)
             yield self
 
 
